@@ -18,7 +18,7 @@ const CropModal = ({
 
   return (
     <div className="absolute inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50">
-      <div className="bg-gray-800 p-5 rounded-lg max-w-[80%] max-h-[80%] overflow-auto">
+      <div className="bg-gray-800 p-5 rounded-lg max-w-full sm:max-w-[80%] max-h-[80%] overflow-auto">
         <h3 className="text-white mb-4">Recadrer l'image</h3>
 
         <ReactCrop
@@ -30,7 +30,7 @@ const CropModal = ({
           <img
             ref={imgRef}
             src={selectedImage}
-            className="max-w-full max-h-[400px]"
+            className="max-w-full max-h-[60vh]"
             onLoad={() => {
               if (imgRef.current) {
                 const { width, height } = imgRef.current;
@@ -46,7 +46,7 @@ const CropModal = ({
           />
         </ReactCrop>
 
-        <div className="flex mt-4 gap-3">
+        <div className="flex flex-col sm:flex-row mt-4 gap-3">
           <button
             onClick={handleCropValidate}
             className="px-4 py-2 bg-green-600 text-white rounded"

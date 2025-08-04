@@ -10,12 +10,12 @@ const TopBar = ({
   exportAnnotations,
   handleImageUpload,
 }) => (
-  <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4 border-b bg-white gap-2">
     <div className="text-lg font-semibold text-gray-900">
       FACADE 1 <span className="text-gray-400 text-sm">(MANUAL)</span>
     </div>
 
-    <div className="flex items-center space-x-2">
+    <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={toggleDrawing}
         className={`px-4 py-1 rounded-full transition duration-200 ease-in-out shadow-sm ${
