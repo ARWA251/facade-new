@@ -1,44 +1,58 @@
 import React from 'react';
 
-const TopBar = ({ undo, redo, clearBoxes, handleImageUpload }) => (
-  <div className="flex justify-between items-center px-5 py-2 bg-gray-800 border-b border-gray-700">
-    <div className="flex items-center gap-2">
-      <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer">
-        ☰ Menu
-      </div>
-      <div
-        className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer"
-        onClick={undo}
-      >
-        ↶ Précédent
-      </div>
-      <div
-        className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer"
-        onClick={redo}
-      >
-        ↷ Suivant
-      </div>
+const TopBar = ({
+  drawingActive,
+  polygonActive,
+  toggleDrawing,
+  togglePolygonDrawing,
+  selectedEntity,
+  setSelectedEntity,
+  exportAnnotations,
+}) => (
+  <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
+    <div className="text-lg font-semibold text-gray-900">
+      FACADE 1 <span className="text-gray-400 text-sm">(MANUAL)</span>
     </div>
-    <div className="flex gap-2">
+
+    <div className="flex items-center space-x-2">
       <button
-        className="bg-gray-700 text-white px-3 py-2 rounded"
-        onClick={clearBoxes}
+        onClick={toggleDrawing}
+        className={`px-4 py-1 rounded-full transition duration-200 ease-in-out shadow-sm ${
+          drawingActive
+            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-100'
+        }`}
       >
-        🗑 Clear
+        Rectangle
       </button>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="hidden"
-        id="file-input"
-      />
-      <label
-        htmlFor="file-input"
-        className="bg-gray-700 px-3 py-2 rounded cursor-pointer text-white"
+      <button
+        onClick={togglePolygonDrawing}
+        className={`px-4 py-1 rounded-full transition duration-200 ease-in-out shadow-sm ${
+          polygonActive
+            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-100'
+        }`}
       >
-        📁 Image
-      </label>
+        Polygon
+      </button>
+
+      <label className="text-sm text-gray-500">Type d'annotation:</label>
+      <select
+        value={selectedEntity}
+        onChange={(e) => setSelectedEntity(e.target.value)}
+        className="border rounded px-2 py-1 text-sm"
+      >
+        <option value="fenetre">Fenêtre</option>
+        <option value="porte">Porte</option>
+        <option value="facade">Façade</option>
+      </select>
+
+      <button
+        onClick={exportAnnotations}
+        className="bg-blue-500 text-white px-4 py-2 rounded-full shadow hover:bg-blue-600 transition duration-200 ease-in-out"
+      >
+        Sauvegarder
+      </button>
     </div>
   </div>
 );
