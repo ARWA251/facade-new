@@ -572,6 +572,7 @@ const AnnotationCanvas = () => {
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
           exportAnnotations={exportAnnotations}
+          handleImageUpload={handleImageUpload}
         />
 
         <div className="flex-1 p-6">

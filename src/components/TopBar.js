@@ -8,6 +8,7 @@ const TopBar = ({
   selectedEntity,
   setSelectedEntity,
   exportAnnotations,
+  handleImageUpload,
 }) => (
   <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
     <div className="text-lg font-semibold text-gray-900">
@@ -35,6 +36,20 @@ const TopBar = ({
       >
         Polygon
       </button>
+
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        id="image-upload"
+        className="hidden"
+      />
+      <label
+        htmlFor="image-upload"
+        className="px-4 py-1 rounded-full bg-gray-200 text-gray-700 shadow cursor-pointer hover:bg-gray-100 transition duration-200 ease-in-out"
+      >
+        Image
+      </label>
 
       <label className="text-sm text-gray-500">Type d'annotation:</label>
       <select
