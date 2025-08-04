@@ -3,6 +3,7 @@ import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabri
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import CropModal from './CropModal';
+import CanvasWithGrid from './CanvasWithGrid';
 
 const AnnotationCanvas = () => {
   const canvasRef = useRef(null);
@@ -159,7 +160,7 @@ const AnnotationCanvas = () => {
   // Canvas initialisé une seule fois
   useEffect(() => {
     const canvas = new Canvas(canvasRef.current, {
-      backgroundColor: '#f5f5f5'
+      backgroundColor: 'rgba(0,0,0,0)'
     });
     fabricRef.current = canvas;
 
@@ -574,9 +575,7 @@ const AnnotationCanvas = () => {
         />
 
         <div className="flex-1 p-2 md:p-6">
-          <div className="bg-gray-100 border rounded-lg w-full h-full flex items-center justify-center">
-            <canvas ref={canvasRef} className="w-full h-full" />
-          </div>
+          <CanvasWithGrid ref={canvasRef} className="flex items-center justify-center" />
         </div>
       </main>
 
