@@ -1,4 +1,5 @@
 import React from 'react';
+import { Image as ImageIcon, RectangleHorizontal, Save, Shapes } from 'lucide-react';
 
 const TopBar = ({
   drawingActive,
@@ -24,7 +25,7 @@ const TopBar = ({
             : 'bg-gray-200 text-gray-700 hover:bg-gray-100'
         }`}
       >
-        Rectangle
+        <RectangleHorizontal className="inline-block mr-1" size={16} /> Rectangle
       </button>
       <button
         onClick={togglePolygonDrawing}
@@ -34,7 +35,7 @@ const TopBar = ({
             : 'bg-gray-200 text-gray-700 hover:bg-gray-100'
         }`}
       >
-        Polygon
+        <Shapes className="inline-block mr-1" size={16} /> Polygon
       </button>
 
       <input
@@ -48,7 +49,7 @@ const TopBar = ({
         htmlFor="image-upload"
         className="px-4 py-1 rounded-full bg-gray-200 text-gray-700 shadow cursor-pointer hover:bg-gray-100 transition duration-200 ease-in-out"
       >
-        Image
+        <ImageIcon className="inline-block mr-1" size={16} /> Image
       </label>
 
       <label className="text-sm text-gray-500">Type d'annotation:</label>
@@ -66,7 +67,7 @@ const TopBar = ({
         onClick={exportAnnotations}
         className="bg-blue-500 text-white px-4 py-2 rounded-full shadow hover:bg-blue-600 transition duration-200 ease-in-out"
       >
-        Sauvegarder
+        <Save className="inline-block mr-1" size={16} /> Sauvegarder
       </button>
     </div>
   </div>
