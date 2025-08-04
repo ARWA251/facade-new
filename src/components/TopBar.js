@@ -1,4 +1,5 @@
 import React from 'react';
+import { Image as ImageIcon, Save } from 'lucide-react';
 const TopBar = ({
   drawingActive,
   polygonActive,
@@ -60,7 +61,8 @@ const TopBar = ({
           htmlFor="image-upload"
           className="px-5 py-2 rounded-full bg-white text-gray-700 font-medium text-sm shadow-md border border-gray-200 cursor-pointer hover:bg-gray-50 hover:shadow-lg transition-all duration-200 ease-out transform hover:scale-105"
         >
-          :file_folder: Image
+          <ImageIcon className="inline-block w-4 h-4 mr-2" />
+          Image
         </label>
         {/* Annotation Type Selector */}
         <div className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md border border-gray-200">
@@ -80,6 +82,7 @@ const TopBar = ({
           onClick={exportAnnotations}
           className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-full font-semibold text-sm shadow-lg hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transition-all duration-200 ease-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
+          <Save className="inline-block w-4 h-4 mr-2" />
            Sauvegarder
         </button>
       </div>
