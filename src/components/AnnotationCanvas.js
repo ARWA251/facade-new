@@ -4,6 +4,7 @@ import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import CropModal from './CropModal';
 import CanvasWithGrid from './CanvasWithGrid';
+import ScaleModal from './ScaleModal';
 
 const AnnotationCanvas = () => {
   const canvasRef = useRef(null);
@@ -39,6 +40,8 @@ const AnnotationCanvas = () => {
   const [scaleActive, setScaleActive] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState('fenetre');
   const [scaleRatio, setScaleRatio] = useState(null);
+  const [scaleModalOpen, setScaleModalOpen] = useState(false);
+  const [pendingScaleLength, setPendingScaleLength] = useState(null);
 
   const historyStep = useRef(0);
   const history = useRef([]);
@@ -344,10 +347,9 @@ const AnnotationCanvas = () => {
       if (isScaleMode.current && scaleLineRef.current) {
         const { x1, y1, x2, y2 } = scaleLineRef.current;
         const pixelLength = Math.hypot(x2 - x1, y2 - y1);
-        const input = window.prompt('Longueur réelle en cm ?');
-        const cm = parseFloat(input);
-        if (!isNaN(cm) && cm > 0 && pixelLength > 0) {
-          setScaleRatio(cm / pixelLength);
+        if (pixelLength > 0) {
+          setPendingScaleLength(pixelLength);
+          setScaleModalOpen(true);
         }
         canvas.remove(scaleLineRef.current);
         scaleLineRef.current = null;
@@ -706,6 +708,21 @@ const AnnotationCanvas = () => {
       </main>
 
       <Toolbox undo={undo} redo={redo} />
+
+      <ScaleModal
+        isOpen={scaleModalOpen}
+        onSubmit={(cm) => {
+          if (pendingScaleLength) {
+            setScaleRatio(cm / pendingScaleLength);
+          }
+          setScaleModalOpen(false);
+          setPendingScaleLength(null);
+        }}
+        onCancel={() => {
+          setScaleModalOpen(false);
+          setPendingScaleLength(null);
+        }}
+      />
 
       <CropModal
         cropMode={cropMode}
