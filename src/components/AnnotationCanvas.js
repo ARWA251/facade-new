@@ -164,8 +164,8 @@ const AnnotationCanvas = () => {
     });
     fabricRef.current = canvas;
 
-    canvas.setWidth(1200);
-    canvas.setHeight(800);
+    canvas.setWidth(800);
+    canvas.setHeight(600);
 
     setTimeout(() => {
       saveState();
@@ -574,8 +574,8 @@ const AnnotationCanvas = () => {
           handleImageUpload={handleImageUpload}
         />
 
-        <div className="flex-1 p-2 md:p-6">
-          <CanvasWithGrid ref={canvasRef} className="flex items-center justify-center" />
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
+          <CanvasWithGrid ref={canvasRef} width={800} height={600} />
         </div>
       </main>
 

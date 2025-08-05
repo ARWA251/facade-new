@@ -1,8 +1,11 @@
 import React, { forwardRef } from 'react';
 
-const CanvasWithGrid = forwardRef(({ className = '' }, ref) => {
+const CanvasWithGrid = forwardRef(({ className = '', width = 800, height = 600 }, ref) => {
   return (
-    <div className={`bg-gray-100 border rounded-lg w-full h-full relative ${className}`}>
+    <div
+      className={`bg-gray-100 border rounded-lg relative ${className}`}
+      style={{ width, height }}
+    >
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
