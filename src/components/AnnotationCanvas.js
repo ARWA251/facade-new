@@ -34,9 +34,8 @@ const AnnotationCanvas = () => {
   const [polygonActive, setPolygonActive] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState('fenetre');
 
-  const historyStep = useRef(0);
-  const history = useRef([]);
-  const historyProcessing = useRef(false);
+  const annotationsHistory = useRef([]);
+  const redoStack = useRef([]);
 
   const cropPoints = useRef([]);
   const cropLines = useRef([]);
@@ -80,57 +79,28 @@ const AnnotationCanvas = () => {
     selectedEntityRef.current = selectedEntity;
   }, [selectedEntity]);
 
-  const saveState = () => {
-    if (historyProcessing.current) return;
-    
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    
-    const currentState = JSON.stringify(canvas.toJSON(['dataType']));
-    
-    if (historyStep.current < history.current.length - 1) {
-      history.current = history.current.slice(0, historyStep.current + 1);
-    }
-    
-    history.current.push(currentState);
-    historyStep.current = history.current.length - 1;
-    
-    if (history.current.length > 50) {
-      history.current = history.current.slice(-50);
-      historyStep.current = history.current.length - 1;
-    }
-  };
-
-  // Restore the canvas to the previous saved state
   const undo = () => {
     const canvas = fabricRef.current;
-    if (!canvas || historyStep.current <= 0) return;
+    if (!canvas) return;
 
-    historyProcessing.current = true;
-    historyStep.current -= 1;
-    const state = history.current[historyStep.current];
-
-    canvas.loadFromJSON(state, () => {
+    const annotation = annotationsHistory.current.pop();
+    if (annotation) {
+      redoStack.current.push(annotation);
+      canvas.remove(annotation);
       canvas.renderAll();
-      canvas.discardActiveObject();
-      historyProcessing.current = false;
-    });
+    }
   };
 
-  // Restore the canvas to the next saved state
   const redo = () => {
     const canvas = fabricRef.current;
-    if (!canvas || historyStep.current >= history.current.length - 1) return;
+    if (!canvas) return;
 
-    historyProcessing.current = true;
-    historyStep.current += 1;
-    const state = history.current[historyStep.current];
-
-    canvas.loadFromJSON(state, () => {
+    const annotation = redoStack.current.pop();
+    if (annotation) {
+      canvas.add(annotation);
+      annotationsHistory.current.push(annotation);
       canvas.renderAll();
-      canvas.discardActiveObject();
-      historyProcessing.current = false;
-    });
+    }
   };
 
   // Allow keyboard shortcuts (Ctrl/Cmd + Z or Y) to trigger undo/redo
@@ -187,28 +157,6 @@ const AnnotationCanvas = () => {
 
     canvas.setWidth(1200);
     canvas.setHeight(800);
-
-    setTimeout(() => {
-      saveState();
-    }, 100);
-
-    canvas.on('object:added', () => {
-      if (!historyProcessing.current) {
-        setTimeout(saveState, 100);
-      }
-    });
-
-    canvas.on('object:removed', () => {
-      if (!historyProcessing.current) {
-        setTimeout(saveState, 100);
-      }
-    });
-
-    canvas.on('object:modified', () => {
-      if (!historyProcessing.current) {
-        setTimeout(saveState, 100);
-      }
-    });
 
     canvas.on('mouse:down', function (opt) {
       const pointer = canvas.getPointer(opt.e);
@@ -317,7 +265,11 @@ const AnnotationCanvas = () => {
 
     canvas.on('mouse:up', function () {
       drawing.current = false;
-      if (rectRef.current) rectRef.current.setCoords();
+      if (rectRef.current) {
+        rectRef.current.setCoords();
+        annotationsHistory.current.push(rectRef.current);
+        redoStack.current = [];
+      }
     });
 
     canvas.on('mouse:dblclick', function () {
@@ -342,6 +294,8 @@ const AnnotationCanvas = () => {
       );
 
       canvas.add(polygon);
+      annotationsHistory.current.push(polygon);
+      redoStack.current = [];
 
       currentPolygonLines.current.forEach(line => canvas.remove(line));
       currentPolygonCircles.current.forEach(c => canvas.remove(c));
@@ -404,7 +358,8 @@ const AnnotationCanvas = () => {
     
     objectsToRemove.forEach(obj => canvas.remove(obj));
     canvas.renderAll();
-    setTimeout(saveState, 100);
+    annotationsHistory.current = [];
+    redoStack.current = [];
   };
 
   const exportAnnotations = () => {
@@ -568,7 +523,6 @@ const AnnotationCanvas = () => {
       
       setCropMode(null);
       setSelectedImage(null);
-      setTimeout(saveState, 100);
     };
   };
 const addImageDirectlyTwo = (imageUrl) => {
@@ -608,8 +562,6 @@ const addImageDirectlyTwo = (imageUrl) => {
     setTimeout(() => {
       URL.revokeObjectURL(imageUrl);
     }, 1000);
-
-    setTimeout(saveState, 100);
   };
 
   htmlImg.src = imageUrl; // ⚠️ Toujours définir `.src` après `onload`
