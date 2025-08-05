@@ -101,35 +101,58 @@ const AnnotationCanvas = () => {
     }
   };
 
+  // Restore the canvas to the previous saved state
   const undo = () => {
-    if (historyStep.current > 0) {
-      historyProcessing.current = true;
-      historyStep.current--;
-      
-      const canvas = fabricRef.current;
-      const state = history.current[historyStep.current];
-      
-      canvas.loadFromJSON(state, () => {
-        canvas.renderAll();
-        historyProcessing.current = false;
-      });
-    }
+    const canvas = fabricRef.current;
+    if (!canvas || historyStep.current <= 0) return;
+
+    historyProcessing.current = true;
+    historyStep.current -= 1;
+    const state = history.current[historyStep.current];
+
+    canvas.loadFromJSON(state, () => {
+      canvas.renderAll();
+      canvas.discardActiveObject();
+      historyProcessing.current = false;
+    });
   };
 
+  // Restore the canvas to the next saved state
   const redo = () => {
-    if (historyStep.current < history.current.length - 1) {
-      historyProcessing.current = true;
-      historyStep.current++;
-      
-      const canvas = fabricRef.current;
-      const state = history.current[historyStep.current];
-      
-      canvas.loadFromJSON(state, () => {
-        canvas.renderAll();
-        historyProcessing.current = false;
-      });
-    }
+    const canvas = fabricRef.current;
+    if (!canvas || historyStep.current >= history.current.length - 1) return;
+
+    historyProcessing.current = true;
+    historyStep.current += 1;
+    const state = history.current[historyStep.current];
+
+    canvas.loadFromJSON(state, () => {
+      canvas.renderAll();
+      canvas.discardActiveObject();
+      historyProcessing.current = false;
+    });
   };
+
+  // Allow keyboard shortcuts (Ctrl/Cmd + Z or Y) to trigger undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const key = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && key === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const cleanupCropMode = () => {
     const canvas = fabricRef.current;
