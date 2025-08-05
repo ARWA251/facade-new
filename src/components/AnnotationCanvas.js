@@ -513,6 +513,13 @@ const AnnotationCanvas = () => {
     const htmlImg = new window.Image();
 
     htmlImg.onload = function () {
+      // Flatten the image onto an offscreen canvas to remove any transparency or orientation data
+      const flattenCanvas = document.createElement('canvas');
+      flattenCanvas.width = htmlImg.width;
+      flattenCanvas.height = htmlImg.height;
+      const flattenCtx = flattenCanvas.getContext('2d');
+      flattenCtx.drawImage(htmlImg, 0, 0);
+
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
 
@@ -520,7 +527,7 @@ const AnnotationCanvas = () => {
       const scaleY = canvasHeight / htmlImg.height;
       const scale = Math.min(scaleX, scaleY) * 0.9;
 
-      const fabricImg = new FabricImage(htmlImg, {
+      const fabricImg = new FabricImage(flattenCanvas, {
         scaleX: scale,
         scaleY: scale,
         left: (canvasWidth - htmlImg.width * scale) / 2,
