@@ -585,12 +585,14 @@ const toggleScaleMode = () => {
       const imageUrl = event.target.result;
       setSelectedImage(imageUrl);
       setCropMode('cropImage');
-      
+
       // Réinitialiser le crop
       setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
       setCompletedCrop(null);
     };
     reader.readAsDataURL(file);
+    // Reset the input so selecting the same file again re-triggers the change event
+    e.target.value = null;
   };
 
   // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
@@ -598,6 +600,10 @@ const toggleScaleMode = () => {
     if (!imageUrl) return;
 
     const canvas = fabricRef.current;
+    // Remove any previously added images so the new one replaces it
+    canvas.getObjects('image').forEach((img) => canvas.remove(img));
+    canvas.requestRenderAll();
+
     const htmlImg = new window.Image();
 
     htmlImg.onload = function () {
