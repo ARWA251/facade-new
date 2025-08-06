@@ -101,35 +101,58 @@ const AnnotationCanvas = () => {
     }
   };
 
+  // Restore the canvas to the previous saved state
   const undo = () => {
-    if (historyStep.current > 0) {
-      historyProcessing.current = true;
-      historyStep.current--;
-      
-      const canvas = fabricRef.current;
-      const state = history.current[historyStep.current];
-      
-      canvas.loadFromJSON(state, () => {
-        canvas.renderAll();
-        historyProcessing.current = false;
-      });
-    }
+    const canvas = fabricRef.current;
+    if (!canvas || historyStep.current <= 0) return;
+
+    historyProcessing.current = true;
+    historyStep.current -= 1;
+    const state = history.current[historyStep.current];
+
+    canvas.loadFromJSON(state, () => {
+      canvas.renderAll();
+      canvas.discardActiveObject();
+      historyProcessing.current = false;
+    });
   };
 
+  // Restore the canvas to the next saved state
   const redo = () => {
-    if (historyStep.current < history.current.length - 1) {
-      historyProcessing.current = true;
-      historyStep.current++;
-      
-      const canvas = fabricRef.current;
-      const state = history.current[historyStep.current];
-      
-      canvas.loadFromJSON(state, () => {
-        canvas.renderAll();
-        historyProcessing.current = false;
-      });
-    }
+    const canvas = fabricRef.current;
+    if (!canvas || historyStep.current >= history.current.length - 1) return;
+
+    historyProcessing.current = true;
+    historyStep.current += 1;
+    const state = history.current[historyStep.current];
+
+    canvas.loadFromJSON(state, () => {
+      canvas.renderAll();
+      canvas.discardActiveObject();
+      historyProcessing.current = false;
+    });
   };
+
+  // Allow keyboard shortcuts (Ctrl/Cmd + Z or Y) to trigger undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const key = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && key === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const cleanupCropMode = () => {
     const canvas = fabricRef.current;
@@ -594,176 +617,70 @@ const addImageDirectlyTwo = (imageUrl) => {
 
 
   return (
-    <div style={{ 
-      position: 'relative', 
-      width: '100%', 
-      height: '100vh', 
-      backgroundColor: '#1a1a1a',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
+    <div className="relative w-full h-screen bg-gray-900 flex flex-col">
       {/* Top Toolbar */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '10px 20px',
-        backgroundColor: '#2a2a2a',
-        borderBottom: '1px solid #444'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            backgroundColor: '#333',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            color: 'white',
-            fontSize: '12px',
-            cursor: 'pointer'
-          }}>
+      <div className="flex justify-between items-center px-5 py-2 bg-gray-800 border-b border-gray-700">
+        <div className="flex items-center gap-2">
+          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer">
             ☰ Menu
           </div>
-
-          <div style={{
-            backgroundColor: '#333',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            color: 'white',
-            fontSize: '12px',
-            cursor: 'pointer'
-          }} onClick={undo}>
+          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer" onClick={undo}>
             ↶ Précédent
           </div>
-
-          <div style={{
-            backgroundColor: '#333',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            color: 'white',
-            fontSize: '12px',
-            cursor: 'pointer'
-          }} onClick={redo}>
+          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer" onClick={redo}>
             ↷ Suivant
           </div>
         </div>
-
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button style={{
-            backgroundColor: '#333',
-            border: 'none',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }} onClick={clearBoxes}>
+        <div className="flex gap-2">
+          <button className="bg-gray-700 text-white px-3 py-2 rounded" onClick={clearBoxes}>
             🗑 Clear
           </button>
-          
-          <input 
-            type="file" 
-            accept="image/*" 
+          <input
+            type="file"
+            accept="image/*"
             onChange={handleImageUpload}
-            style={{ display: 'none' }}
+            className="hidden"
             id="file-input"
           />
-          <label htmlFor="file-input" style={{
-            backgroundColor: '#333',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            color: 'white'
-          }}>
+          <label htmlFor="file-input" className="bg-gray-700 px-3 py-2 rounded cursor-pointer text-white">
             📁 Image
           </label>
         </div>
       </div>
 
       {/* Main Content */}
-      <div style={{ 
-        display: 'flex', 
-        flex: 1,
-        overflow: 'hidden'
-      }}>
+      <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
-        <div style={{
-          width: '60px',
-          backgroundColor: '#2a2a2a',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '10px 0',
-          gap: '10px'
-        }}>
-          <div style={{
-            padding: '10px',
-            borderRadius: '4px',
-            color: 'white',
-            cursor: 'pointer',
-            backgroundColor: drawingActive ? '#4a90e2' : 'transparent'
-          }} onClick={toggleDrawing}>
+        <div className="w-16 bg-gray-800 flex flex-col items-center py-2 gap-2">
+          <div
+            className={`p-2 rounded text-white cursor-pointer ${drawingActive ? 'bg-blue-500' : 'bg-transparent'}`}
+            onClick={toggleDrawing}
+          >
             ➤
           </div>
-          
-          <div style={{
-            padding: '10px',
-            borderRadius: '4px',
-            color: 'white',
-            cursor: 'pointer',
-            backgroundColor: polygonActive ? '#4a90e2' : 'transparent'
-          }} onClick={togglePolygonDrawing}>
+          <div
+            className={`p-2 rounded text-white cursor-pointer ${polygonActive ? 'bg-blue-500' : 'bg-transparent'}`}
+            onClick={togglePolygonDrawing}
+          >
             ⬟
           </div>
         </div>
 
         {/* Canvas Area */}
-        <div style={{ 
-          flex: 1, 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          backgroundColor: '#1a1a1a',
-          padding: '20px'
-        }}>
-          <canvas ref={canvasRef} style={{ border: '1px solid #444' }} />
+        <div className="flex-1 flex justify-center items-center bg-gray-900 p-5">
+          <canvas ref={canvasRef} className="border border-gray-700" />
         </div>
 
         {/* Right Sidebar */}
-        <div style={{
-          width: '300px',
-          backgroundColor: '#2a2a2a',
-          padding: '20px'
-        }}>
-          <div style={{
-            backgroundColor: '#333',
-            padding: '15px',
-            borderRadius: '8px',
-            marginBottom: '20px'
-          }}>
-            <h3 style={{
-              color: 'white',
-              margin: '0 0 15px 0',
-              fontSize: '16px',
-              fontWeight: 'bold'
-            }}>FACADE 1 (MANUAL)</h3>
-            
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{
-                color: '#aaa',
-                fontSize: '12px',
-                display: 'block',
-                marginBottom: '5px'
-              }}>Type d'annotation:</label>
-              <select 
+        <div className="w-72 bg-gray-800 p-5 overflow-auto">
+          <div className="bg-gray-700 p-4 rounded mb-5">
+            <h3 className="text-white mb-4 text-lg font-bold">FACADE 1 (MANUAL)</h3>
+            <div className="mb-4">
+              <label className="text-gray-300 text-xs block mb-1">Type d'annotation:</label>
+              <select
                 value={selectedEntity}
                 onChange={(e) => setSelectedEntity(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  backgroundColor: '#222',
-                  border: '1px solid #555',
-                  borderRadius: '4px',
-                  color: 'white',
-                  fontSize: '14px'
-                }}
+                className="w-full p-2 bg-gray-800 text-white rounded border border-gray-600 text-sm"
               >
                 <option value="fenetre">🪟 Fenêtre</option>
                 <option value="porte">🚪 Porte</option>
@@ -771,35 +688,16 @@ const addImageDirectlyTwo = (imageUrl) => {
               </select>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+            <div className="flex gap-2 mb-4">
               <button
                 onClick={toggleDrawing}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  backgroundColor: drawingActive ? '#4a90e2' : '#444',
-                  border: 'none',
-                  borderRadius: '4px',
-                  color: 'white',
-                  fontSize: '12px',
-                  cursor: 'pointer'
-                }}
+                className={`flex-1 p-2 rounded text-white text-xs ${drawingActive ? 'bg-blue-500' : 'bg-gray-600'}`}
               >
                 {drawingActive ? 'Stop Rectangle' : 'Rectangle'}
               </button>
-              
               <button
                 onClick={togglePolygonDrawing}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  backgroundColor: polygonActive ? '#4a90e2' : '#444',
-                  border: 'none',
-                  borderRadius: '4px',
-                  color: 'white',
-                  fontSize: '12px',
-                  cursor: 'pointer'
-                }}
+                className={`flex-1 p-2 rounded text-white text-xs ${polygonActive ? 'bg-blue-500' : 'bg-gray-600'}`}
               >
                 {polygonActive ? 'Stop Polygon' : 'Polygon'}
               </button>
@@ -807,16 +705,7 @@ const addImageDirectlyTwo = (imageUrl) => {
 
             <button
               onClick={exportAnnotations}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#28a745',
-                border: 'none',
-                borderRadius: '4px',
-                color: 'white',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
+              className="w-full py-3 bg-green-600 rounded text-white text-sm"
             >
               💾 Sauvegarder
             </button>
@@ -826,28 +715,10 @@ const addImageDirectlyTwo = (imageUrl) => {
 
       {/* Interface de Crop */}
       {cropMode === 'cropImage' && selectedImage && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: '#333',
-            padding: '20px',
-            borderRadius: '8px',
-            maxWidth: '80%',
-            maxHeight: '80%',
-            overflow: 'auto'
-          }}>
-            <h3 style={{ color: 'white', marginBottom: '15px' }}>Recadrer l'image</h3>
-            
+        <div className="absolute inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50">
+          <div className="bg-gray-800 p-5 rounded-lg max-w-[80%] max-h-[80%] overflow-auto">
+            <h3 className="text-white mb-4">Recadrer l'image</h3>
+
             <ReactCrop
               crop={crop}
               onChange={(_, percentCrop) => setCrop(percentCrop)}
@@ -857,7 +728,7 @@ const addImageDirectlyTwo = (imageUrl) => {
               <img
                 ref={imgRef}
                 src={selectedImage}
-                style={{ maxWidth: '100%', maxHeight: '400px' }}
+                className="max-w-full max-h-[400px]"
                 onLoad={() => {
                   if (imgRef.current) {
                     const { width, height } = imgRef.current;
@@ -872,51 +743,28 @@ const addImageDirectlyTwo = (imageUrl) => {
                 }}
               />
             </ReactCrop>
-            
-            <div style={{ display: 'flex', marginTop: '15px', gap: '10px' }}>
-              <button 
-                onClick={handleCropValidate} 
-                style={{ 
-                  padding: '10px 20px', 
-                  background: '#28a745', 
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
+
+            <div className="flex mt-4 gap-3">
+              <button
+                onClick={handleCropValidate}
+                className="px-4 py-2 bg-green-600 text-white rounded"
               >
                 ✅ Valider le crop
               </button>
-              
-              <button 
-                onClick={addImageDirectly} 
-                style={{ 
-                  padding: '10px 20px', 
-                  background: '#007bff', 
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
+              <button
+                onClick={addImageDirectly}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
               >
                 📷 Ajouter sans crop
               </button>
-              
-              <button 
+              <button
                 onClick={() => {
                   setCropMode(null);
                   setSelectedImage(null);
                   setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
                   setCompletedCrop(null);
-                }} 
-                style={{ 
-                  padding: '10px 20px', 
-                  background: '#dc3545', 
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
                 }}
+                className="px-4 py-2 bg-red-600 text-white rounded"
               >
                 ❌ Annuler
               </button>
