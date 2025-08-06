@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
-import ReactCrop from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import TopBar from './TopBar';
+import Toolbox from './Toolbox';
+import Sidebar from './Sidebar';
+import CropModal from './CropModal';
 
 const AnnotationCanvas = () => {
   const canvasRef = useRef(null);
@@ -464,9 +466,6 @@ const AnnotationCanvas = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
-// Voici où devrait se trouver la fonction addImageToCanvas :
-
-// Fonction pour ajouter l'image directement au canvas
 
   // Fonction de crop corrigée
  const handleCropValidate = () => {
@@ -499,8 +498,8 @@ const AnnotationCanvas = () => {
     if (!blob) return;
 
     const croppedImageUrl = URL.createObjectURL(blob);
-    addImageDirectlyTwo(croppedImageUrl); // Ne révoque pas ici !
-    
+    addImageToCanvas(croppedImageUrl, { revokeUrl: true });
+
     // Réinitialisation
     setCropMode(null);
     setSelectedImage(null);
@@ -529,13 +528,12 @@ const AnnotationCanvas = () => {
     reader.readAsDataURL(file);
   };
 
-  // Fonction pour ajouter l'image directement sans crop
-  const addImageDirectly = () => {
-    if (!selectedImage) return;
-    
+  // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
+  const addImageToCanvas = (imageUrl, { revokeUrl = false } = {}) => {
+    if (!imageUrl) return;
+
     const canvas = fabricRef.current;
     const htmlImg = new window.Image();
-    htmlImg.src = selectedImage;
 
     htmlImg.onload = function () {
       const canvasWidth = canvas.getWidth();
@@ -550,8 +548,8 @@ const AnnotationCanvas = () => {
         scaleY: scale,
         left: (canvasWidth - htmlImg.width * scale) / 2,
         top: (canvasHeight - htmlImg.height * scale) / 2,
-        selectable: false,  // Empêche la sélection
-        evented: false,     // Empêche les événements
+        selectable: false,
+        evented: false,
         lockMovementX: true,
         lockMovementY: true,
         lockRotation: true,
@@ -562,216 +560,78 @@ const AnnotationCanvas = () => {
       });
 
       canvas.add(fabricImg);
-      // Envoyer l'image au fond
-      // canvas.sendToBack(fabricImg);
       canvas.requestRenderAll();
-      
-      setCropMode(null);
-      setSelectedImage(null);
+
+      if (revokeUrl) {
+        setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
+      }
+
       setTimeout(saveState, 100);
     };
-  };
-const addImageDirectlyTwo = (imageUrl) => {
-  if (!imageUrl) return;
 
-  const canvas = fabricRef.current;
-  const htmlImg = new window.Image();
-
-  htmlImg.onload = function () {
-    const canvasWidth = canvas.getWidth();
-    const canvasHeight = canvas.getHeight();
-
-    const scaleX = canvasWidth / htmlImg.width;
-    const scaleY = canvasHeight / htmlImg.height;
-    const scale = Math.min(scaleX, scaleY) * 0.9;
-
-    const fabricImg = new FabricImage(htmlImg, {
-      scaleX: scale,
-      scaleY: scale,
-      left: (canvasWidth - htmlImg.width * scale) / 2,
-      top: (canvasHeight - htmlImg.height * scale) / 2,
-      selectable: false,
-      evented: false,
-      lockMovementX: true,
-      lockMovementY: true,
-      lockRotation: true,
-      lockScalingX: true,
-      lockScalingY: true,
-      hoverCursor: 'default',
-      moveCursor: 'default'
-    });
-
-    canvas.add(fabricImg);
-    canvas.requestRenderAll();
-
-    // 🔁 Révoquer après que l’image soit bien ajoutée
-    setTimeout(() => {
-      URL.revokeObjectURL(imageUrl);
-    }, 1000);
-
-    setTimeout(saveState, 100);
+    // Définir la source après `onload` pour garantir un chargement correct
+    htmlImg.src = imageUrl;
   };
 
-  htmlImg.src = imageUrl; // ⚠️ Toujours définir `.src` après `onload`
-};
+  // Ajoute l'image sélectionnée sans appliquer de crop
+  const addImageDirectly = () => {
+    if (!selectedImage) return;
+
+    addImageToCanvas(selectedImage);
+    setCropMode(null);
+    setSelectedImage(null);
+  };
 
 
   return (
     <div className="relative w-full h-screen bg-gray-900 flex flex-col">
-      {/* Top Toolbar */}
-      <div className="flex justify-between items-center px-5 py-2 bg-gray-800 border-b border-gray-700">
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer">
-            ☰ Menu
-          </div>
-          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer" onClick={undo}>
-            ↶ Précédent
-          </div>
-          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer" onClick={redo}>
-            ↷ Suivant
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button className="bg-gray-700 text-white px-3 py-2 rounded" onClick={clearBoxes}>
-            🗑 Clear
-          </button>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-            id="file-input"
-          />
-          <label htmlFor="file-input" className="bg-gray-700 px-3 py-2 rounded cursor-pointer text-white">
-            📁 Image
-          </label>
-        </div>
-      </div>
+      <TopBar
+        undo={undo}
+        redo={redo}
+        clearBoxes={clearBoxes}
+        handleImageUpload={handleImageUpload}
+      />
 
-      {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-16 bg-gray-800 flex flex-col items-center py-2 gap-2">
-          <div
-            className={`p-2 rounded text-white cursor-pointer ${drawingActive ? 'bg-blue-500' : 'bg-transparent'}`}
-            onClick={toggleDrawing}
-          >
-            ➤
-          </div>
-          <div
-            className={`p-2 rounded text-white cursor-pointer ${polygonActive ? 'bg-blue-500' : 'bg-transparent'}`}
-            onClick={togglePolygonDrawing}
-          >
-            ⬟
-          </div>
-        </div>
+        <Toolbox
+          drawingActive={drawingActive}
+          polygonActive={polygonActive}
+          toggleDrawing={toggleDrawing}
+          togglePolygonDrawing={togglePolygonDrawing}
+        />
 
-        {/* Canvas Area */}
         <div className="flex-1 flex justify-center items-center bg-gray-900 p-5">
           <canvas ref={canvasRef} className="border border-gray-700" />
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-72 bg-gray-800 p-5 overflow-auto">
-          <div className="bg-gray-700 p-4 rounded mb-5">
-            <h3 className="text-white mb-4 text-lg font-bold">FACADE 1 (MANUAL)</h3>
-            <div className="mb-4">
-              <label className="text-gray-300 text-xs block mb-1">Type d'annotation:</label>
-              <select
-                value={selectedEntity}
-                onChange={(e) => setSelectedEntity(e.target.value)}
-                className="w-full p-2 bg-gray-800 text-white rounded border border-gray-600 text-sm"
-              >
-                <option value="fenetre">🪟 Fenêtre</option>
-                <option value="porte">🚪 Porte</option>
-                <option value="facade">🏢 Façade</option>
-              </select>
-            </div>
-
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={toggleDrawing}
-                className={`flex-1 p-2 rounded text-white text-xs ${drawingActive ? 'bg-blue-500' : 'bg-gray-600'}`}
-              >
-                {drawingActive ? 'Stop Rectangle' : 'Rectangle'}
-              </button>
-              <button
-                onClick={togglePolygonDrawing}
-                className={`flex-1 p-2 rounded text-white text-xs ${polygonActive ? 'bg-blue-500' : 'bg-gray-600'}`}
-              >
-                {polygonActive ? 'Stop Polygon' : 'Polygon'}
-              </button>
-            </div>
-
-            <button
-              onClick={exportAnnotations}
-              className="w-full py-3 bg-green-600 rounded text-white text-sm"
-            >
-              💾 Sauvegarder
-            </button>
-          </div>
-        </div>
+        <Sidebar
+          selectedEntity={selectedEntity}
+          setSelectedEntity={setSelectedEntity}
+          drawingActive={drawingActive}
+          polygonActive={polygonActive}
+          toggleDrawing={toggleDrawing}
+          togglePolygonDrawing={togglePolygonDrawing}
+          exportAnnotations={exportAnnotations}
+        />
       </div>
 
-      {/* Interface de Crop */}
-      {cropMode === 'cropImage' && selectedImage && (
-        <div className="absolute inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50">
-          <div className="bg-gray-800 p-5 rounded-lg max-w-[80%] max-h-[80%] overflow-auto">
-            <h3 className="text-white mb-4">Recadrer l'image</h3>
-
-            <ReactCrop
-              crop={crop}
-              onChange={(_, percentCrop) => setCrop(percentCrop)}
-              onComplete={(c) => setCompletedCrop(c)}
-              aspect={undefined}
-            >
-              <img
-                ref={imgRef}
-                src={selectedImage}
-                className="max-w-full max-h-[400px]"
-                onLoad={() => {
-                  if (imgRef.current) {
-                    const { width, height } = imgRef.current;
-                    setCompletedCrop({
-                      unit: 'px',
-                      x: width * 0.25,
-                      y: height * 0.25,
-                      width: width * 0.5,
-                      height: height * 0.5
-                    });
-                  }
-                }}
-              />
-            </ReactCrop>
-
-            <div className="flex mt-4 gap-3">
-              <button
-                onClick={handleCropValidate}
-                className="px-4 py-2 bg-green-600 text-white rounded"
-              >
-                ✅ Valider le crop
-              </button>
-              <button
-                onClick={addImageDirectly}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                📷 Ajouter sans crop
-              </button>
-              <button
-                onClick={() => {
-                  setCropMode(null);
-                  setSelectedImage(null);
-                  setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
-                  setCompletedCrop(null);
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded"
-              >
-                ❌ Annuler
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CropModal
+        cropMode={cropMode}
+        selectedImage={selectedImage}
+        crop={crop}
+        setCrop={setCrop}
+        completedCrop={completedCrop}
+        setCompletedCrop={setCompletedCrop}
+        imgRef={imgRef}
+        handleCropValidate={handleCropValidate}
+        addImageDirectly={addImageDirectly}
+        onCancel={() => {
+          setCropMode(null);
+          setSelectedImage(null);
+          setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
+          setCompletedCrop(null);
+        }}
+      />
     </div>
   );
 };
