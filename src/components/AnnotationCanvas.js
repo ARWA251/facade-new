@@ -710,8 +710,6 @@ const toggleScaleMode = () => {
 
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
-          layerVisibility={layerVisibility}
-          toggleLayer={toggleLayer}
           exportAnnotations={exportAnnotations}
           handleImageUpload={handleImageUpload}
         />
@@ -721,7 +719,12 @@ const toggleScaleMode = () => {
         </div>
       </main>
 
-      <Toolbox undo={undo} redo={redo} />
+      <Toolbox
+        undo={undo}
+        redo={redo}
+        layerVisibility={layerVisibility}
+        toggleLayer={toggleLayer}
+      />
       <ScaleModal
         isOpen={scaleModalOpen}
         onSubmit={(cm) => {
