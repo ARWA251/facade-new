@@ -1,7 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+   import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
-import ReactCrop from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import TopBar from './TopBar';
+import Toolbox from './Toolbox';
+import CropModal from './CropModal';
+import CanvasWithGrid from './CanvasWithGrid';
+import ScaleModal from './ScaleModal';
 
 const AnnotationCanvas = () => {
   const canvasRef = useRef(null);
@@ -21,6 +24,12 @@ const AnnotationCanvas = () => {
 
   const isDrawingMode = useRef(false);
   const isPolygonMode = useRef(false);
+  const isScaleMode = useRef(false);
+  const scaleLineRef = useRef(null);
+  const [scaleActive, setScaleActive] = useState(false);
+  const [scaleRatio, setScaleRatio] = useState(null);
+  const [scaleModalOpen, setScaleModalOpen] = useState(false);
+  const [pendingScaleLength, setPendingScaleLength] = useState(null);
   const currentPolygonPoints = useRef([]);
   const currentPolygonLines = useRef([]);
   const currentPolygonCircles = useRef([]);
@@ -36,7 +45,6 @@ const AnnotationCanvas = () => {
 
   const annotationsHistory = useRef([]);
   const redoStack = useRef([]);
-
   const cropPoints = useRef([]);
   const cropLines = useRef([]);
   const cropCircles = useRef([]);
@@ -72,12 +80,32 @@ const AnnotationCanvas = () => {
     const lat = geoBounds.maxLat - (y / imgHeight) * (geoBounds.maxLat - geoBounds.minLat);
     return [lon, lat];
   };
+  const polygonArea = (points) => {
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+      const { x: x1, y: y1 } = points[i];
+      const { x: x2, y: y2 } = points[(i + 1) % points.length];
+      area += x1 * y2 - x2 * y1;
+    }
+    return Math.abs(area) / 2;
+  };
 
+  const polygonPerimeter = (points) => {
+    let per = 0;
+    for (let i = 0; i < points.length; i++) {
+      const { x: x1, y: y1 } = points[i];
+      const { x: x2, y: y2 } = points[(i + 1) % points.length];
+      per += Math.hypot(x2 - x1, y2 - y1);
+    }
+    return per;
+  };
   const selectedEntityRef = useRef(selectedEntity);
 
   useEffect(() => {
     selectedEntityRef.current = selectedEntity;
   }, [selectedEntity]);
+
+  
 
   const undo = () => {
     const canvas = fabricRef.current;
@@ -88,22 +116,21 @@ const AnnotationCanvas = () => {
       redoStack.current.push(annotation);
       canvas.remove(annotation);
       canvas.renderAll();
+      
     }
   };
 
   const redo = () => {
     const canvas = fabricRef.current;
     if (!canvas) return;
-
-    const annotation = redoStack.current.pop();
+      const annotation = redoStack.current.pop();
     if (annotation) {
       canvas.add(annotation);
       annotationsHistory.current.push(annotation);
       canvas.renderAll();
     }
   };
-
-  // Allow keyboard shortcuts (Ctrl/Cmd + Z or Y) to trigger undo/redo
+ // Allow keyboard shortcuts (Ctrl/Cmd + Z or Y) to trigger undo/redo
   useEffect(() => {
     const handleKeyDown = (e) => {
       const key = e.key.toLowerCase();
@@ -123,7 +150,6 @@ const AnnotationCanvas = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
   const cleanupCropMode = () => {
     const canvas = fabricRef.current;
     
@@ -151,16 +177,31 @@ const AnnotationCanvas = () => {
   // Canvas initialisé une seule fois
   useEffect(() => {
     const canvas = new Canvas(canvasRef.current, {
-      backgroundColor: '#f5f5f5'
+      backgroundColor: 'rgba(0,0,0,0)'
     });
     fabricRef.current = canvas;
 
-    canvas.setWidth(1200);
-    canvas.setHeight(800);
+    canvas.setWidth(800);
+    canvas.setHeight(600);
 
+    
     canvas.on('mouse:down', function (opt) {
       const pointer = canvas.getPointer(opt.e);
-
+      if (isScaleMode.current) {
+        startX.current = pointer.x;
+        startY.current = pointer.y;
+        drawing.current = true;
+        const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+          stroke: '#FF0000',
+          strokeWidth: 2,
+          selectable: false,
+          evented: false,
+        });
+        scaleLineRef.current = line;
+        canvas.add(line);
+        canvas.renderAll();
+        return;
+      }
       if (isPolygonMode.current) {
         const point = new Circle({
           left: pointer.x,
@@ -227,7 +268,11 @@ const AnnotationCanvas = () => {
 
     canvas.on('mouse:move', function (opt) {
       const pointer = canvas.getPointer(opt.e);
-
+      if (isScaleMode.current && drawing.current && scaleLineRef.current) {
+        scaleLineRef.current.set({ x2: pointer.x, y2: pointer.y });
+        canvas.renderAll();
+        return;
+      }
       if (isPolygonMode.current && currentPolygonPoints.current.length > 0) {
         const [lastX, lastY] = currentPolygonPoints.current.at(-1);
 
@@ -264,6 +309,22 @@ const AnnotationCanvas = () => {
     });
 
     canvas.on('mouse:up', function () {
+
+      if (isScaleMode.current && scaleLineRef.current) {
+        const { x1, y1, x2, y2 } = scaleLineRef.current;
+        const pixelLength = Math.hypot(x2 - x1, y2 - y1);
+        if (pixelLength > 0) {
+          setPendingScaleLength(pixelLength);
+          setScaleModalOpen(true);
+        }
+        canvas.remove(scaleLineRef.current);
+        scaleLineRef.current = null;
+        isScaleMode.current = false;
+        setScaleActive(false);
+        drawing.current = false;
+        canvas.renderAll();
+        return;
+      }
       drawing.current = false;
       if (rectRef.current) {
         rectRef.current.setCoords();
@@ -296,7 +357,6 @@ const AnnotationCanvas = () => {
       canvas.add(polygon);
       annotationsHistory.current.push(polygon);
       redoStack.current = [];
-
       currentPolygonLines.current.forEach(line => canvas.remove(line));
       currentPolygonCircles.current.forEach(c => canvas.remove(c));
       if (previewLine.current) {
@@ -324,6 +384,10 @@ const AnnotationCanvas = () => {
       isPolygonMode.current = false;
       setPolygonActive(false);
     }
+    if (isDrawingMode.current && isScaleMode.current) {
+      isScaleMode.current = false;
+      setScaleActive(false);
+    }
   };
 
   const togglePolygonDrawing = () => {
@@ -346,8 +410,34 @@ const AnnotationCanvas = () => {
       isDrawingMode.current = false;
       setDrawingActive(false);
     }
+     if (isPolygonMode.current && isScaleMode.current) {
+      isScaleMode.current = false;
+      setScaleActive(false);
+    }
   };
+const toggleScaleMode = () => {
+    const canvas = fabricRef.current;
+    isScaleMode.current = !isScaleMode.current;
+    setScaleActive(isScaleMode.current);
 
+    if (isScaleMode.current) {
+      isDrawingMode.current = false;
+      isPolygonMode.current = false;
+      setDrawingActive(false);
+      setPolygonActive(false);
+
+      currentPolygonPoints.current = [];
+      currentPolygonLines.current.forEach(line => canvas.remove(line));
+      currentPolygonLines.current = [];
+
+      if (previewLine.current) {
+        canvas.remove(previewLine.current);
+        previewLine.current = null;
+      }
+
+      canvas.renderAll();
+    }
+  };
   const clearBoxes = () => {
     const canvas = fabricRef.current;
     const objectsToRemove = canvas.getObjects().filter(obj => {
@@ -372,7 +462,7 @@ const AnnotationCanvas = () => {
       if (obj === canvas.backgroundImage) return;
 
       let polygon = [];
-
+      let metrics = null;
       if (obj.type === 'rect') {
         const left = obj.left;
         const top = obj.top;
@@ -385,29 +475,51 @@ const AnnotationCanvas = () => {
           pixelToGeo(left, top + height, imgWidth, imgHeight),
           pixelToGeo(left, top, imgWidth, imgHeight)
         ];
+        if (scaleRatio) {
+          metrics = {
+            width_cm: width * scaleRatio,
+            height_cm: height * scaleRatio,
+            area_cm2: width * scaleRatio * height * scaleRatio,
+          };
+        }
       } else if (obj.type === 'polygon') {
-        polygon = obj.points.map(p => pixelToGeo(p.x + obj.left, p.y + obj.top, imgWidth, imgHeight));
+        const pixelPoints = obj.points.map(p => ({ x: p.x + obj.left, y: p.y + obj.top }));
+        polygon = pixelPoints.map(p => pixelToGeo(p.x, p.y, imgWidth, imgHeight));
         polygon.push(polygon[0]);
+        if (scaleRatio) {
+          const areaPx = polygonArea(pixelPoints);
+          const perimeterPx = polygonPerimeter(pixelPoints);
+          metrics = {
+            area_cm2: areaPx * scaleRatio * scaleRatio,
+            perimeter_cm: perimeterPx * scaleRatio,
+          };
+        }
       } else {
         return;
       }
-
+      const properties = {
+        label: obj.dataType || "unknown",
+        fill: obj.fill,
+        stroke: obj.stroke,
+      };
+      if (metrics) {
+        Object.assign(properties, metrics);
+      }
       features.push({
         type: "Feature",
-        properties: {
-          label: obj.dataType || "unknown",
-          fill: obj.fill,
-          stroke: obj.stroke
-        },
+        properties,
         geometry: {
           type: "Polygon",
           coordinates: [polygon]
         }
+        
       });
     });
 
     const geojson = {
       type: "FeatureCollection",
+      scale: scaleRatio,
+
       features
     };
 
@@ -419,9 +531,6 @@ const AnnotationCanvas = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
-// Voici où devrait se trouver la fonction addImageToCanvas :
-
-// Fonction pour ajouter l'image directement au canvas
 
   // Fonction de crop corrigée
  const handleCropValidate = () => {
@@ -454,8 +563,8 @@ const AnnotationCanvas = () => {
     if (!blob) return;
 
     const croppedImageUrl = URL.createObjectURL(blob);
-    addImageDirectlyTwo(croppedImageUrl); // Ne révoque pas ici !
-    
+    addImageToCanvas(croppedImageUrl, { revokeUrl: true });
+
     // Réinitialisation
     setCropMode(null);
     setSelectedImage(null);
@@ -484,20 +593,20 @@ const AnnotationCanvas = () => {
     reader.readAsDataURL(file);
   };
 
-  // Fonction pour ajouter l'image directement sans crop
-  const addImageDirectly = () => {
-    if (!selectedImage) return;
+  // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
+  const addImageToCanvas = (imageUrl, { revokeUrl = false } = {}) => {
+    if (!imageUrl) return;
 
     const canvas = fabricRef.current;
-
-    // Supprimer l'ancienne image et les annotations existantes
-    clearBoxes();
-    canvas.getObjects('image').forEach((img) => canvas.remove(img));
-
     const htmlImg = new window.Image();
-    htmlImg.src = selectedImage;
 
     htmlImg.onload = function () {
+      // Flatten the image onto an offscreen canvas to remove any transparency or orientation data
+      const flattenCanvas = document.createElement('canvas');
+      flattenCanvas.width = htmlImg.width;
+      flattenCanvas.height = htmlImg.height;
+      const flattenCtx = flattenCanvas.getContext('2d');
+      flattenCtx.drawImage(htmlImg, 0, 0);
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
 
@@ -505,13 +614,13 @@ const AnnotationCanvas = () => {
       const scaleY = canvasHeight / htmlImg.height;
       const scale = Math.min(scaleX, scaleY) * 0.9;
 
-      const fabricImg = new FabricImage(htmlImg, {
+      const fabricImg = new FabricImage(flattenCanvas, {
         scaleX: scale,
         scaleY: scale,
         left: (canvasWidth - htmlImg.width * scale) / 2,
         top: (canvasHeight - htmlImg.height * scale) / 2,
-        selectable: false,  // Empêche la sélection
-        evented: false,     // Empêche les événements
+        selectable: false,
+        evented: false,
         lockMovementX: true,
         lockMovementY: true,
         lockRotation: true,
@@ -522,219 +631,83 @@ const AnnotationCanvas = () => {
       });
 
       canvas.add(fabricImg);
-      // Envoyer l'image au fond
-      // canvas.sendToBack(fabricImg);
       canvas.requestRenderAll();
 
-      setCropMode(null);
-      setSelectedImage(null);
+      if (revokeUrl) {
+        setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
+      }
+
     };
+
+    // Définir la source après `onload` pour garantir un chargement correct
+    htmlImg.src = imageUrl;
   };
 
-const addImageDirectlyTwo = (imageUrl) => {
-  if (!imageUrl) return;
-
-  const canvas = fabricRef.current;
-
-  // Supprimer l'ancienne image et les annotations existantes
-  clearBoxes();
-  canvas.getObjects('image').forEach((img) => canvas.remove(img));
-
-  const htmlImg = new window.Image();
-
-  htmlImg.onload = function () {
-    const canvasWidth = canvas.getWidth();
-    const canvasHeight = canvas.getHeight();
-
-    const scaleX = canvasWidth / htmlImg.width;
-    const scaleY = canvasHeight / htmlImg.height;
-    const scale = Math.min(scaleX, scaleY) * 0.9;
-
-    const fabricImg = new FabricImage(htmlImg, {
-      scaleX: scale,
-      scaleY: scale,
-      left: (canvasWidth - htmlImg.width * scale) / 2,
-      top: (canvasHeight - htmlImg.height * scale) / 2,
-      selectable: false,
-      evented: false,
-      lockMovementX: true,
-      lockMovementY: true,
-      lockRotation: true,
-      lockScalingX: true,
-      lockScalingY: true,
-      hoverCursor: 'default',
-      moveCursor: 'default'
-    });
-
-    canvas.add(fabricImg);
-    canvas.requestRenderAll();
-
-    // 🔁 Révoquer après que l’image soit bien ajoutée
-    setTimeout(() => {
-      URL.revokeObjectURL(imageUrl);
-    }, 1000);
+  // Ajoute l'image sélectionnée sans appliquer de crop
+  const addImageDirectly = () => {
+    if (!selectedImage) return;
+    
+    addImageToCanvas(selectedImage);
+    setCropMode(null);
+    setSelectedImage(null);
   };
-
-  htmlImg.src = imageUrl; // ⚠️ Toujours définir `.src` après `onload`
-};
 
 
   return (
-    <div className="relative w-full h-screen bg-gray-900 flex flex-col">
-      {/* Top Toolbar */}
-      <div className="flex justify-between items-center px-5 py-2 bg-gray-800 border-b border-gray-700">
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer">
-            ☰ Menu
-          </div>
-          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer" onClick={undo}>
-            ↶ Précédent
-          </div>
-          <div className="bg-gray-700 px-3 py-2 rounded text-white text-xs cursor-pointer" onClick={redo}>
-            ↷ Suivant
-          </div>
+    <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
+      <main className="flex-1 flex flex-col order-1 md:order-2">
+        <TopBar
+          drawingActive={drawingActive}
+          polygonActive={polygonActive}
+          scaleActive={scaleActive}
+
+          toggleDrawing={toggleDrawing}
+          togglePolygonDrawing={togglePolygonDrawing}
+          toggleScaleMode={toggleScaleMode}
+
+          selectedEntity={selectedEntity}
+          setSelectedEntity={setSelectedEntity}
+          exportAnnotations={exportAnnotations}
+          handleImageUpload={handleImageUpload}
+        />
+
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
+          <CanvasWithGrid ref={canvasRef} width={800} height={600} />
         </div>
-        <div className="flex gap-2">
-          <button className="bg-gray-700 text-white px-3 py-2 rounded" onClick={clearBoxes}>
-            🗑 Clear
-          </button>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-            id="file-input"
-          />
-          <label htmlFor="file-input" className="bg-gray-700 px-3 py-2 rounded cursor-pointer text-white">
-            📁 Image
-          </label>
-        </div>
-      </div>
+      </main>
 
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-16 bg-gray-800 flex flex-col items-center py-2 gap-2">
-          <div
-            className={`p-2 rounded text-white cursor-pointer ${drawingActive ? 'bg-blue-500' : 'bg-transparent'}`}
-            onClick={toggleDrawing}
-          >
-            ➤
-          </div>
-          <div
-            className={`p-2 rounded text-white cursor-pointer ${polygonActive ? 'bg-blue-500' : 'bg-transparent'}`}
-            onClick={togglePolygonDrawing}
-          >
-            ⬟
-          </div>
-        </div>
-
-        {/* Canvas Area */}
-        <div className="flex-1 flex justify-center items-center bg-gray-900 p-5">
-          <canvas ref={canvasRef} className="border border-gray-700" />
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="w-72 bg-gray-800 p-5 overflow-auto">
-          <div className="bg-gray-700 p-4 rounded mb-5">
-            <h3 className="text-white mb-4 text-lg font-bold">FACADE 1 (MANUAL)</h3>
-            <div className="mb-4">
-              <label className="text-gray-300 text-xs block mb-1">Type d'annotation:</label>
-              <select
-                value={selectedEntity}
-                onChange={(e) => setSelectedEntity(e.target.value)}
-                className="w-full p-2 bg-gray-800 text-white rounded border border-gray-600 text-sm"
-              >
-                <option value="fenetre">🪟 Fenêtre</option>
-                <option value="porte">🚪 Porte</option>
-                <option value="facade">🏢 Façade</option>
-              </select>
-            </div>
-
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={toggleDrawing}
-                className={`flex-1 p-2 rounded text-white text-xs ${drawingActive ? 'bg-blue-500' : 'bg-gray-600'}`}
-              >
-                {drawingActive ? 'Stop Rectangle' : 'Rectangle'}
-              </button>
-              <button
-                onClick={togglePolygonDrawing}
-                className={`flex-1 p-2 rounded text-white text-xs ${polygonActive ? 'bg-blue-500' : 'bg-gray-600'}`}
-              >
-                {polygonActive ? 'Stop Polygon' : 'Polygon'}
-              </button>
-            </div>
-
-            <button
-              onClick={exportAnnotations}
-              className="w-full py-3 bg-green-600 rounded text-white text-sm"
-            >
-              💾 Sauvegarder
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Interface de Crop */}
-      {cropMode === 'cropImage' && selectedImage && (
-        <div className="absolute inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50">
-          <div className="bg-gray-800 p-5 rounded-lg max-w-[80%] max-h-[80%] overflow-auto">
-            <h3 className="text-white mb-4">Recadrer l'image</h3>
-
-            <ReactCrop
-              crop={crop}
-              onChange={(_, percentCrop) => setCrop(percentCrop)}
-              onComplete={(c) => setCompletedCrop(c)}
-              aspect={undefined}
-            >
-              <img
-                ref={imgRef}
-                src={selectedImage}
-                className="max-w-full max-h-[400px]"
-                onLoad={() => {
-                  if (imgRef.current) {
-                    const { width, height } = imgRef.current;
-                    setCompletedCrop({
-                      unit: 'px',
-                      x: width * 0.25,
-                      y: height * 0.25,
-                      width: width * 0.5,
-                      height: height * 0.5
-                    });
-                  }
-                }}
-              />
-            </ReactCrop>
-
-            <div className="flex mt-4 gap-3">
-              <button
-                onClick={handleCropValidate}
-                className="px-4 py-2 bg-green-600 text-white rounded"
-              >
-                ✅ Valider le crop
-              </button>
-              <button
-                onClick={addImageDirectly}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                📷 Ajouter sans crop
-              </button>
-              <button
-                onClick={() => {
-                  setCropMode(null);
-                  setSelectedImage(null);
-                  setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
-                  setCompletedCrop(null);
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded"
-              >
-                ❌ Annuler
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Toolbox undo={undo} redo={redo} />
+      <ScaleModal
+        isOpen={scaleModalOpen}
+        onSubmit={(cm) => {
+          if (pendingScaleLength) {
+            setScaleRatio(cm / pendingScaleLength);
+          }
+          setScaleModalOpen(false);
+          setPendingScaleLength(null);
+        }}
+        onCancel={() => {
+          setScaleModalOpen(false);
+          setPendingScaleLength(null);
+        }}
+      />
+      <CropModal
+        cropMode={cropMode}
+        selectedImage={selectedImage}
+        crop={crop}
+        setCrop={setCrop}
+        completedCrop={completedCrop}
+        setCompletedCrop={setCompletedCrop}
+        imgRef={imgRef}
+        handleCropValidate={handleCropValidate}
+        addImageDirectly={addImageDirectly}
+        onCancel={() => {
+          setCropMode(null);
+          setSelectedImage(null);
+          setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
+          setCompletedCrop(null);
+        }}
+      />
     </div>
   );
 };
