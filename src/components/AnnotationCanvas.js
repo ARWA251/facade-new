@@ -560,10 +560,8 @@ const AnnotationCanvas = () => {
 
 
   return (
-    <div className="relative flex h-screen bg-gray-50">
-      <Toolbox undo={undo} redo={redo} />
-
-      <main className="flex-1 flex flex-col">
+    <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
+      <main className="flex-1 flex flex-col order-1 md:order-2">
         <TopBar
           drawingActive={drawingActive}
           polygonActive={polygonActive}
@@ -575,12 +573,14 @@ const AnnotationCanvas = () => {
           handleImageUpload={handleImageUpload}
         />
 
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-2 md:p-6">
           <div className="bg-gray-100 border rounded-lg w-full h-full flex items-center justify-center">
             <canvas ref={canvasRef} className="w-full h-full" />
           </div>
         </div>
       </main>
+
+      <Toolbox undo={undo} redo={redo} />
 
       <CropModal
         cropMode={cropMode}
