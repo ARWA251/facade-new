@@ -1,10 +1,12 @@
 import React from 'react';
-import { Image as ImageIcon, Save } from 'lucide-react';
+import { Image as ImageIcon, Save, Ruler } from 'lucide-react';
 const TopBar = ({
   drawingActive,
   polygonActive,
+  scaleActive,
   toggleDrawing,
   togglePolygonDrawing,
+  toggleScaleMode,
   selectedEntity,
   setSelectedEntity,
   exportAnnotations,
@@ -47,6 +49,17 @@ const TopBar = ({
             }`}
           >
             Polygon
+          </button>
+          <button
+            onClick={toggleScaleMode}
+            className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+              scaleActive
+                ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                : 'text-gray-700 hover:bg-white hover:shadow-sm'
+            }`}
+          >
+            <Ruler className="inline-block w-4 h-4 mr-1" />
+            Échelle
           </button>
         </div>
         {/* Image Upload */}
