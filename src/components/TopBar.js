@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Image as ImageIcon, RectangleHorizontal, Save, Shapes } from 'lucide-react';
 
 const TopBar = ({
@@ -71,7 +70,6 @@ const TopBar = ({
       >
         <Save className="inline-block mr-1" size={16} /> Sauvegarder
       </button>
-=======
   <div className="relative bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200 shadow-sm">
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-6 py-5 gap-4">
       {/* Title Section */}
@@ -123,7 +121,8 @@ const TopBar = ({
           htmlFor="image-upload"
           className="px-5 py-2 rounded-full bg-white text-gray-700 font-medium text-sm shadow-md border border-gray-200 cursor-pointer hover:bg-gray-50 hover:shadow-lg transition-all duration-200 ease-out transform hover:scale-105"
         >
-          :file_folder: Image
+          <ImageIcon className="inline-block w-4 h-4 mr-2" />
+          Image
         </label>
         {/* Annotation Type Selector */}
         <div className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md border border-gray-200">
@@ -143,6 +142,7 @@ const TopBar = ({
           onClick={exportAnnotations}
           className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-full font-semibold text-sm shadow-lg hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transition-all duration-200 ease-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
+          <Save className="inline-block w-4 h-4 mr-2" />
            Sauvegarder
         </button>
       </div>
