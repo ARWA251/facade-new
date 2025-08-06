@@ -10,6 +10,8 @@ const TopBar = ({
 
   selectedEntity,
   setSelectedEntity,
+  layerVisibility,
+  toggleLayer,
   exportAnnotations,
   handleImageUpload,
 }) => (
@@ -90,6 +92,26 @@ const TopBar = ({
             <option value="porte">Porte</option>
             <option value="facade">Façade</option>
           </select>
+        </div>
+        {/* Layer Visibility */}
+        <div className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md border border-gray-200">
+          <label className="text-sm font-medium text-gray-600">Calques:</label>
+          {[
+            { key: 'fenetre', label: 'Fenêtre' },
+            { key: 'porte', label: 'Porte' },
+            { key: 'facade', label: 'Façade' },
+            { key: 'baseImage', label: 'Image de base' },
+            { key: 'processedImage', label: 'Image traitée' },
+          ].map(({ key, label }) => (
+            <label key={key} className="flex items-center space-x-1 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={layerVisibility[key]}
+                onChange={() => toggleLayer(key)}
+              />
+              <span>{label}</span>
+            </label>
+          ))}
         </div>
         {/* Save Button */}
         <button

@@ -43,6 +43,21 @@ const AnnotationCanvas = () => {
   const [polygonActive, setPolygonActive] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState('fenetre');
 
+  const [layerVisibility, setLayerVisibility] = useState({
+    fenetre: true,
+    porte: true,
+    facade: true,
+    baseImage: true,
+    processedImage: true,
+  });
+  const layerVisibilityRef = useRef(layerVisibility);
+  const baseImageRef = useRef(null);
+  const processedImageRef = useRef(null);
+
+  const toggleLayer = (layer) => {
+    setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
+  };
+
   const annotationsHistory = useRef([]);
   const redoStack = useRef([]);
   const cropPoints = useRef([]);
@@ -104,6 +119,19 @@ const AnnotationCanvas = () => {
   useEffect(() => {
     selectedEntityRef.current = selectedEntity;
   }, [selectedEntity]);
+
+  useEffect(() => {
+    layerVisibilityRef.current = layerVisibility;
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    canvas.getObjects().forEach((obj) => {
+      const type = obj.dataType;
+      if (type && layerVisibility.hasOwnProperty(type)) {
+        obj.visible = layerVisibility[type];
+      }
+    });
+    canvas.requestRenderAll();
+  }, [layerVisibility]);
 
   
 
@@ -258,7 +286,8 @@ const AnnotationCanvas = () => {
           cornerStyle: 'rect',
           cornerSize: 6,
           cornerColor: color.stroke,
-          borderColor: color.stroke
+          borderColor: color.stroke,
+          visible: layerVisibilityRef.current[selectedEntityRef.current],
         });
 
         rectRef.current = rect;
@@ -350,7 +379,8 @@ const AnnotationCanvas = () => {
           cornerStyle: 'rect',
           cornerSize: 6,
           cornerColor: color.stroke,
-          borderColor: color.stroke
+          borderColor: color.stroke,
+          visible: layerVisibilityRef.current[selectedEntityRef.current],
         }
       );
 
@@ -563,7 +593,7 @@ const toggleScaleMode = () => {
     if (!blob) return;
 
     const croppedImageUrl = URL.createObjectURL(blob);
-    addImageToCanvas(croppedImageUrl, { revokeUrl: true });
+    addImageToCanvas(croppedImageUrl, { layer: 'processedImage', revokeUrl: true });
 
     // Réinitialisation
     setCropMode(null);
@@ -584,6 +614,7 @@ const toggleScaleMode = () => {
     reader.onload = function (event) {
       const imageUrl = event.target.result;
       setSelectedImage(imageUrl);
+      addImageToCanvas(imageUrl, { layer: 'baseImage' });
       setCropMode('cropImage');
 
       // Réinitialiser le crop
@@ -596,13 +627,14 @@ const toggleScaleMode = () => {
   };
 
   // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
-  const addImageToCanvas = (imageUrl, { revokeUrl = false } = {}) => {
+  const addImageToCanvas = (imageUrl, { layer = 'baseImage', revokeUrl = false } = {}) => {
     if (!imageUrl) return;
 
     const canvas = fabricRef.current;
-    // Remove any previously added images so the new one replaces it
-    canvas.getObjects('image').forEach((img) => canvas.remove(img));
-    canvas.requestRenderAll();
+    const ref = layer === 'baseImage' ? baseImageRef : processedImageRef;
+    if (ref.current) {
+      canvas.remove(ref.current);
+    }
 
     const htmlImg = new window.Image();
 
@@ -633,16 +665,21 @@ const toggleScaleMode = () => {
         lockScalingX: true,
         lockScalingY: true,
         hoverCursor: 'default',
-        moveCursor: 'default'
+        moveCursor: 'default',
+        dataType: layer,
+        visible: layerVisibilityRef.current[layer],
       });
 
+      ref.current = fabricImg;
       canvas.add(fabricImg);
+      if (layer === 'baseImage') {
+        canvas.sendToBack(fabricImg);
+      }
       canvas.requestRenderAll();
 
       if (revokeUrl) {
         setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
       }
-
     };
 
     // Définir la source après `onload` pour garantir un chargement correct
@@ -652,8 +689,8 @@ const toggleScaleMode = () => {
   // Ajoute l'image sélectionnée sans appliquer de crop
   const addImageDirectly = () => {
     if (!selectedImage) return;
-    
-    addImageToCanvas(selectedImage);
+
+    addImageToCanvas(selectedImage, { layer: 'baseImage' });
     setCropMode(null);
     setSelectedImage(null);
   };
@@ -673,6 +710,8 @@ const toggleScaleMode = () => {
 
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
+          layerVisibility={layerVisibility}
+          toggleLayer={toggleLayer}
           exportAnnotations={exportAnnotations}
           handleImageUpload={handleImageUpload}
         />
