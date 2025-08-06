@@ -487,8 +487,13 @@ const AnnotationCanvas = () => {
   // Fonction pour ajouter l'image directement sans crop
   const addImageDirectly = () => {
     if (!selectedImage) return;
-    
+
     const canvas = fabricRef.current;
+
+    // Supprimer l'ancienne image et les annotations existantes
+    clearBoxes();
+    canvas.getObjects('image').forEach((img) => canvas.remove(img));
+
     const htmlImg = new window.Image();
     htmlImg.src = selectedImage;
 
@@ -520,15 +525,21 @@ const AnnotationCanvas = () => {
       // Envoyer l'image au fond
       // canvas.sendToBack(fabricImg);
       canvas.requestRenderAll();
-      
+
       setCropMode(null);
       setSelectedImage(null);
     };
   };
+
 const addImageDirectlyTwo = (imageUrl) => {
   if (!imageUrl) return;
 
   const canvas = fabricRef.current;
+
+  // Supprimer l'ancienne image et les annotations existantes
+  clearBoxes();
+  canvas.getObjects('image').forEach((img) => canvas.remove(img));
+
   const htmlImg = new window.Image();
 
   htmlImg.onload = function () {
