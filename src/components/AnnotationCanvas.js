@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
-import Sidebar from './Sidebar';
 import CropModal from './CropModal';
 
 const AnnotationCanvas = () => {
@@ -561,36 +560,27 @@ const AnnotationCanvas = () => {
 
 
   return (
-    <div className="relative w-full h-screen bg-gray-900 flex flex-col">
-      <TopBar
-        undo={undo}
-        redo={redo}
-        clearBoxes={clearBoxes}
-        handleImageUpload={handleImageUpload}
-      />
+    <div className="relative flex h-screen bg-gray-50">
+      <Toolbox undo={undo} redo={redo} />
 
-      <div className="flex flex-1 overflow-hidden">
-        <Toolbox
+      <main className="flex-1 flex flex-col">
+        <TopBar
           drawingActive={drawingActive}
           polygonActive={polygonActive}
           toggleDrawing={toggleDrawing}
           togglePolygonDrawing={togglePolygonDrawing}
-        />
-
-        <div className="flex-1 flex justify-center items-center bg-gray-900 p-5">
-          <canvas ref={canvasRef} className="border border-gray-700" />
-        </div>
-
-        <Sidebar
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
-          drawingActive={drawingActive}
-          polygonActive={polygonActive}
-          toggleDrawing={toggleDrawing}
-          togglePolygonDrawing={togglePolygonDrawing}
           exportAnnotations={exportAnnotations}
+          handleImageUpload={handleImageUpload}
         />
-      </div>
+
+        <div className="flex-1 p-6">
+          <div className="bg-gray-100 border rounded-lg w-full h-full flex items-center justify-center">
+            <canvas ref={canvasRef} className="w-full h-full" />
+          </div>
+        </div>
+      </main>
 
       <CropModal
         cropMode={cropMode}

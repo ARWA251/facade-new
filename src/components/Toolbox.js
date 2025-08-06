@@ -1,20 +1,20 @@
 import React from 'react';
 
-const Toolbox = ({ drawingActive, polygonActive, toggleDrawing, togglePolygonDrawing }) => (
-  <div className="w-16 bg-gray-800 flex flex-col items-center py-2 gap-2">
-    <div
-      className={`p-2 rounded text-white cursor-pointer ${drawingActive ? 'bg-blue-500' : 'bg-transparent'}`}
-      onClick={toggleDrawing}
+const Toolbox = ({ undo, redo }) => (
+  <aside className="w-16 bg-white border-r flex flex-col items-center space-y-4 py-4">
+    <button
+      onClick={undo}
+      className="text-gray-400 hover:text-blue-500 transition duration-200"
     >
-      ➤
-    </div>
-    <div
-      className={`p-2 rounded text-white cursor-pointer ${polygonActive ? 'bg-blue-500' : 'bg-transparent'}`}
-      onClick={togglePolygonDrawing}
+      ↶
+    </button>
+    <button
+      onClick={redo}
+      className="text-gray-400 hover:text-blue-500 transition duration-200"
     >
-      ⬟
-    </div>
-  </div>
+      ↷
+    </button>
+  </aside>
 );
 
 export default Toolbox;
