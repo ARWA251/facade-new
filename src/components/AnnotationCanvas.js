@@ -3,6 +3,7 @@ import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabri
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import CropModal from './CropModal';
+import CanvasWithGrid from './CanvasWithGrid';
 
 const AnnotationCanvas = () => {
   const canvasRef = useRef(null);
@@ -22,6 +23,7 @@ const AnnotationCanvas = () => {
 
   const isDrawingMode = useRef(false);
   const isPolygonMode = useRef(false);
+  const isScaleMode = useRef(false);
   const currentPolygonPoints = useRef([]);
   const currentPolygonLines = useRef([]);
   const currentPolygonCircles = useRef([]);
@@ -30,10 +32,13 @@ const AnnotationCanvas = () => {
   const startX = useRef(0);
   const startY = useRef(0);
   const drawing = useRef(false);
+  const scaleLineRef = useRef(null);
 
   const [drawingActive, setDrawingActive] = useState(false);
   const [polygonActive, setPolygonActive] = useState(false);
+  const [scaleActive, setScaleActive] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState('fenetre');
+  const [scaleRatio, setScaleRatio] = useState(null);
 
   const historyStep = useRef(0);
   const history = useRef([]);
@@ -73,6 +78,26 @@ const AnnotationCanvas = () => {
     const lon = geoBounds.minLon + (x / imgWidth) * (geoBounds.maxLon - geoBounds.minLon);
     const lat = geoBounds.maxLat - (y / imgHeight) * (geoBounds.maxLat - geoBounds.minLat);
     return [lon, lat];
+  };
+
+  const polygonArea = (points) => {
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+      const { x: x1, y: y1 } = points[i];
+      const { x: x2, y: y2 } = points[(i + 1) % points.length];
+      area += x1 * y2 - x2 * y1;
+    }
+    return Math.abs(area) / 2;
+  };
+
+  const polygonPerimeter = (points) => {
+    let per = 0;
+    for (let i = 0; i < points.length; i++) {
+      const { x: x1, y: y1 } = points[i];
+      const { x: x2, y: y2 } = points[(i + 1) % points.length];
+      per += Math.hypot(x2 - x1, y2 - y1);
+    }
+    return per;
   };
 
   const selectedEntityRef = useRef(selectedEntity);
@@ -159,12 +184,12 @@ const AnnotationCanvas = () => {
   // Canvas initialisé une seule fois
   useEffect(() => {
     const canvas = new Canvas(canvasRef.current, {
-      backgroundColor: '#f5f5f5'
+      backgroundColor: 'rgba(0,0,0,0)'
     });
     fabricRef.current = canvas;
 
-    canvas.setWidth(1200);
-    canvas.setHeight(800);
+    canvas.setWidth(800);
+    canvas.setHeight(600);
 
     setTimeout(() => {
       saveState();
@@ -190,6 +215,22 @@ const AnnotationCanvas = () => {
 
     canvas.on('mouse:down', function (opt) {
       const pointer = canvas.getPointer(opt.e);
+
+      if (isScaleMode.current) {
+        startX.current = pointer.x;
+        startY.current = pointer.y;
+        drawing.current = true;
+        const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+          stroke: '#FF0000',
+          strokeWidth: 2,
+          selectable: false,
+          evented: false,
+        });
+        scaleLineRef.current = line;
+        canvas.add(line);
+        canvas.renderAll();
+        return;
+      }
 
       if (isPolygonMode.current) {
         const point = new Circle({
@@ -258,6 +299,12 @@ const AnnotationCanvas = () => {
     canvas.on('mouse:move', function (opt) {
       const pointer = canvas.getPointer(opt.e);
 
+      if (isScaleMode.current && drawing.current && scaleLineRef.current) {
+        scaleLineRef.current.set({ x2: pointer.x, y2: pointer.y });
+        canvas.renderAll();
+        return;
+      }
+
       if (isPolygonMode.current && currentPolygonPoints.current.length > 0) {
         const [lastX, lastY] = currentPolygonPoints.current.at(-1);
 
@@ -294,6 +341,22 @@ const AnnotationCanvas = () => {
     });
 
     canvas.on('mouse:up', function () {
+      if (isScaleMode.current && scaleLineRef.current) {
+        const { x1, y1, x2, y2 } = scaleLineRef.current;
+        const pixelLength = Math.hypot(x2 - x1, y2 - y1);
+        const input = window.prompt('Longueur réelle en cm ?');
+        const cm = parseFloat(input);
+        if (!isNaN(cm) && cm > 0 && pixelLength > 0) {
+          setScaleRatio(cm / pixelLength);
+        }
+        canvas.remove(scaleLineRef.current);
+        scaleLineRef.current = null;
+        isScaleMode.current = false;
+        setScaleActive(false);
+        drawing.current = false;
+        canvas.renderAll();
+        return;
+      }
       drawing.current = false;
       if (rectRef.current) rectRef.current.setCoords();
     });
@@ -348,6 +411,10 @@ const AnnotationCanvas = () => {
       isPolygonMode.current = false;
       setPolygonActive(false);
     }
+    if (isDrawingMode.current && isScaleMode.current) {
+      isScaleMode.current = false;
+      setScaleActive(false);
+    }
   };
 
   const togglePolygonDrawing = () => {
@@ -369,6 +436,34 @@ const AnnotationCanvas = () => {
     if (isPolygonMode.current && isDrawingMode.current) {
       isDrawingMode.current = false;
       setDrawingActive(false);
+    }
+    if (isPolygonMode.current && isScaleMode.current) {
+      isScaleMode.current = false;
+      setScaleActive(false);
+    }
+  };
+
+  const toggleScaleMode = () => {
+    const canvas = fabricRef.current;
+    isScaleMode.current = !isScaleMode.current;
+    setScaleActive(isScaleMode.current);
+
+    if (isScaleMode.current) {
+      isDrawingMode.current = false;
+      isPolygonMode.current = false;
+      setDrawingActive(false);
+      setPolygonActive(false);
+
+      currentPolygonPoints.current = [];
+      currentPolygonLines.current.forEach(line => canvas.remove(line));
+      currentPolygonLines.current = [];
+
+      if (previewLine.current) {
+        canvas.remove(previewLine.current);
+        previewLine.current = null;
+      }
+
+      canvas.renderAll();
     }
   };
 
@@ -395,6 +490,7 @@ const AnnotationCanvas = () => {
       if (obj === canvas.backgroundImage) return;
 
       let polygon = [];
+      let metrics = null;
 
       if (obj.type === 'rect') {
         const left = obj.left;
@@ -408,20 +504,41 @@ const AnnotationCanvas = () => {
           pixelToGeo(left, top + height, imgWidth, imgHeight),
           pixelToGeo(left, top, imgWidth, imgHeight)
         ];
+        if (scaleRatio) {
+          metrics = {
+            width_cm: width * scaleRatio,
+            height_cm: height * scaleRatio,
+            area_cm2: width * scaleRatio * height * scaleRatio,
+          };
+        }
       } else if (obj.type === 'polygon') {
-        polygon = obj.points.map(p => pixelToGeo(p.x + obj.left, p.y + obj.top, imgWidth, imgHeight));
+        const pixelPoints = obj.points.map(p => ({ x: p.x + obj.left, y: p.y + obj.top }));
+        polygon = pixelPoints.map(p => pixelToGeo(p.x, p.y, imgWidth, imgHeight));
         polygon.push(polygon[0]);
+        if (scaleRatio) {
+          const areaPx = polygonArea(pixelPoints);
+          const perimeterPx = polygonPerimeter(pixelPoints);
+          metrics = {
+            area_cm2: areaPx * scaleRatio * scaleRatio,
+            perimeter_cm: perimeterPx * scaleRatio,
+          };
+        }
       } else {
         return;
       }
 
+      const properties = {
+        label: obj.dataType || "unknown",
+        fill: obj.fill,
+        stroke: obj.stroke,
+      };
+      if (metrics) {
+        Object.assign(properties, metrics);
+      }
+
       features.push({
         type: "Feature",
-        properties: {
-          label: obj.dataType || "unknown",
-          fill: obj.fill,
-          stroke: obj.stroke
-        },
+        properties,
         geometry: {
           type: "Polygon",
           coordinates: [polygon]
@@ -431,6 +548,7 @@ const AnnotationCanvas = () => {
 
     const geojson = {
       type: "FeatureCollection",
+      scale: scaleRatio,
       features
     };
 
@@ -512,6 +630,13 @@ const AnnotationCanvas = () => {
     const htmlImg = new window.Image();
 
     htmlImg.onload = function () {
+      // Flatten the image onto an offscreen canvas to remove any transparency or orientation data
+      const flattenCanvas = document.createElement('canvas');
+      flattenCanvas.width = htmlImg.width;
+      flattenCanvas.height = htmlImg.height;
+      const flattenCtx = flattenCanvas.getContext('2d');
+      flattenCtx.drawImage(htmlImg, 0, 0);
+
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
 
@@ -519,7 +644,7 @@ const AnnotationCanvas = () => {
       const scaleY = canvasHeight / htmlImg.height;
       const scale = Math.min(scaleX, scaleY) * 0.9;
 
-      const fabricImg = new FabricImage(htmlImg, {
+      const fabricImg = new FabricImage(flattenCanvas, {
         scaleX: scale,
         scaleY: scale,
         left: (canvasWidth - htmlImg.width * scale) / 2,
@@ -565,18 +690,18 @@ const AnnotationCanvas = () => {
         <TopBar
           drawingActive={drawingActive}
           polygonActive={polygonActive}
+          scaleActive={scaleActive}
           toggleDrawing={toggleDrawing}
           togglePolygonDrawing={togglePolygonDrawing}
+          toggleScaleMode={toggleScaleMode}
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
           exportAnnotations={exportAnnotations}
           handleImageUpload={handleImageUpload}
         />
 
-        <div className="flex-1 p-2 md:p-6">
-          <div className="bg-gray-100 border rounded-lg w-full h-full flex items-center justify-center">
-            <canvas ref={canvasRef} className="w-full h-full" />
-          </div>
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
+          <CanvasWithGrid ref={canvasRef} width={800} height={600} />
         </div>
       </main>
 
