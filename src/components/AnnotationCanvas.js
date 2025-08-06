@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+   import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
@@ -654,10 +654,8 @@ const toggleScaleMode = () => {
 
 
   return (
-    <div className="relative flex h-screen bg-gray-50">
-      <Toolbox undo={undo} redo={redo} />
-
-      <main className="flex-1 flex flex-col">
+    <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
+      <main className="flex-1 flex flex-col order-1 md:order-2">
         <TopBar
           drawingActive={drawingActive}
           polygonActive={polygonActive}
@@ -665,19 +663,34 @@ const toggleScaleMode = () => {
 
           toggleDrawing={toggleDrawing}
           togglePolygonDrawing={togglePolygonDrawing}
+          toggleScaleMode={toggleScaleMode}
+
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
           exportAnnotations={exportAnnotations}
           handleImageUpload={handleImageUpload}
         />
 
-        <div className="flex-1 p-6">
-          <div className="bg-gray-100 border rounded-lg w-full h-full flex items-center justify-center">
-            <canvas ref={canvasRef} className="w-full h-full" />
-          </div>
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
+          <CanvasWithGrid ref={canvasRef} width={800} height={600} />
         </div>
       </main>
 
+      <Toolbox undo={undo} redo={redo} />
+      <ScaleModal
+        isOpen={scaleModalOpen}
+        onSubmit={(cm) => {
+          if (pendingScaleLength) {
+            setScaleRatio(cm / pendingScaleLength);
+          }
+          setScaleModalOpen(false);
+          setPendingScaleLength(null);
+        }}
+        onCancel={() => {
+          setScaleModalOpen(false);
+          setPendingScaleLength(null);
+        }}
+      />
       <CropModal
         cropMode={cropMode}
         selectedImage={selectedImage}
