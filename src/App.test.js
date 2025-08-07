@@ -9,6 +9,6 @@ test('renders header title', () => {
 
 test('renders image upload control', () => {
   render(<App />);
-  const imageButton = screen.getByLabelText(/Image/i);
+  const imageButton = screen.getByLabelText('Image');
   expect(imageButton).toBeInTheDocument();
 });
