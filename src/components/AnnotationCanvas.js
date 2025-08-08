@@ -47,7 +47,7 @@ const AnnotationCanvas = () => {
     fenetre: true,
     porte: true,
     facade: true,
-    baseImage: true,
+    baseImage: false,
     processedImage: true,
   });
   const layerVisibilityRef = useRef(layerVisibility);
@@ -58,6 +58,7 @@ const AnnotationCanvas = () => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
   };
 
+  // History stacks for undo/redo operations
   const annotationsHistory = useRef([]);
   const redoStack = useRef([]);
   const cropPoints = useRef([]);
@@ -90,11 +91,14 @@ const AnnotationCanvas = () => {
     maxLat: 34.04
   };
 
+  // Convert pixel coordinates to geographic longitude/latitude using linear interpolation
   const pixelToGeo = (x, y, imgWidth, imgHeight) => {
     const lon = geoBounds.minLon + (x / imgWidth) * (geoBounds.maxLon - geoBounds.minLon);
     const lat = geoBounds.maxLat - (y / imgHeight) * (geoBounds.maxLat - geoBounds.minLat);
     return [lon, lat];
   };
+
+  // Compute polygon area with the shoelace formula
   const polygonArea = (points) => {
     let area = 0;
     for (let i = 0; i < points.length; i++) {
@@ -105,6 +109,7 @@ const AnnotationCanvas = () => {
     return Math.abs(area) / 2;
   };
 
+  // Sum edge lengths to get the polygon perimeter
   const polygonPerimeter = (points) => {
     let per = 0;
     for (let i = 0; i < points.length; i++) {
@@ -135,6 +140,7 @@ const AnnotationCanvas = () => {
 
   
 
+  // Remove last annotation and place it on the redo stack
   const undo = () => {
     const canvas = fabricRef.current;
     if (!canvas) return;
@@ -148,6 +154,7 @@ const AnnotationCanvas = () => {
     }
   };
 
+  // Reapply an annotation from the redo stack
   const redo = () => {
     const canvas = fabricRef.current;
     if (!canvas) return;
@@ -716,7 +723,7 @@ const toggleScaleMode = () => {
         />
 
         <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
-          <CanvasWithGrid ref={canvasRef} width={800} height={600} />
+          <CanvasWithGrid ref={canvasRef} width={1600} height={900} />
         </div>
       </main>
 
