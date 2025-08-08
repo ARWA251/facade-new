@@ -2,6 +2,7 @@
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
+import LayerPanel from './LayerPanel';
 import CropModal from './CropModal';
 import CanvasWithGrid from './CanvasWithGrid';
 import ScaleModal from './ScaleModal';
@@ -727,9 +728,9 @@ const toggleScaleMode = () => {
         </div>
       </main>
 
-      <Toolbox
-        undo={undo}
-        redo={redo}
+      <Toolbox undo={undo} redo={redo} />
+
+      <LayerPanel
         layerVisibility={layerVisibility}
         toggleLayer={toggleLayer}
       />
