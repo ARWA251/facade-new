@@ -671,9 +671,10 @@ const toggleScaleMode = () => {
       });
 
       ref.current = fabricImg;
-      canvas.add(fabricImg);
       if (layer === 'baseImage') {
-        canvas.sendToBack(fabricImg);
+        canvas.insertAt(0, fabricImg);
+      } else {
+        canvas.add(fabricImg);
       }
       canvas.requestRenderAll();
 
