@@ -709,16 +709,8 @@ const toggleScaleMode = () => {
     <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
       <main className="flex-1 flex flex-col order-1 md:order-2">
         <TopBar
-          drawingActive={drawingActive}
-          polygonActive={polygonActive}
-          scaleActive={scaleActive}
-
-          toggleDrawing={toggleDrawing}
-          togglePolygonDrawing={togglePolygonDrawing}
-          toggleScaleMode={toggleScaleMode}
-
-          selectedEntity={selectedEntity}
-          setSelectedEntity={setSelectedEntity}
+          undo={undo}
+          redo={redo}
           exportAnnotations={exportAnnotations}
           handleImageUpload={handleImageUpload}
         />
@@ -728,7 +720,16 @@ const toggleScaleMode = () => {
         </div>
       </main>
 
-      <Toolbox undo={undo} redo={redo} />
+      <Toolbox
+        drawingActive={drawingActive}
+        polygonActive={polygonActive}
+        scaleActive={scaleActive}
+        toggleDrawing={toggleDrawing}
+        togglePolygonDrawing={togglePolygonDrawing}
+        toggleScaleMode={toggleScaleMode}
+        selectedEntity={selectedEntity}
+        setSelectedEntity={setSelectedEntity}
+      />
 
       <LayerPanel
         layerVisibility={layerVisibility}
