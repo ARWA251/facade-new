@@ -1,68 +1,26 @@
 import React from 'react';
-import { Image as ImageIcon, Save, Ruler } from 'lucide-react';
-const TopBar = ({
-  drawingActive,
-  polygonActive,
-  scaleActive,
-  toggleDrawing,
-  togglePolygonDrawing,
-  toggleScaleMode,
+import { Image as ImageIcon, Save, Undo2, Redo2, Trash2 } from 'lucide-react';
 
-  selectedEntity,
-  setSelectedEntity,
+const TopBar = ({
+  undo,
+  redo,
   exportAnnotations,
   handleImageUpload,
+  deleteSelected,
 }) => (
-  <div className="relative bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200 shadow-sm">
+  <div className="relative w-full bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200 shadow-sm">
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-6 py-5 gap-4">
       {/* Title Section */}
       <div className="flex items-center space-x-3">
         <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-            FACADE 1
-          </h1>
-          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-            Manuel
-          </span>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">FACADE 1</h1>
+          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Manuel</span>
         </div>
       </div>
-      {/* Controls Section */}
+
+      {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* Drawing Tools */}
-        <div className="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
-          <button
-            onClick={toggleDrawing}
-            className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-              drawingActive
-                ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                : 'text-gray-700 hover:bg-white hover:shadow-sm'
-            }`}
-          >
-            Rectangle
-          </button>
-          <button
-            onClick={togglePolygonDrawing}
-            className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-              polygonActive
-                ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                : 'text-gray-700 hover:bg-white hover:shadow-sm'
-            }`}
-          >
-            Polygon
-          </button>
-           <button
-            onClick={toggleScaleMode}
-            className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-              scaleActive
-                ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                : 'text-gray-700 hover:bg-white hover:shadow-sm'
-            }`}
-          >
-            <Ruler className="inline-block w-4 h-4 mr-1" />
-            Échelle
-          </button>
-        </div>
         {/* Image Upload */}
         <input
           type="file"
@@ -78,26 +36,39 @@ const TopBar = ({
           <ImageIcon className="inline-block w-4 h-4 mr-2" />
           Image
         </label>
-        {/* Annotation Type Selector */}
-        <div className="flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-md border border-gray-200">
-          <label className="text-sm font-medium text-gray-600">Type:</label>
-          <select
-            value={selectedEntity}
-            onChange={(e) => setSelectedEntity(e.target.value)}
-            className="border-0 bg-transparent text-sm font-medium text-gray-800 focus:outline-none cursor-pointer"
-          >
-            <option value="fenetre">Fenêtre</option>
-            <option value="porte">Porte</option>
-            <option value="facade">Façade</option>
-          </select>
-        </div>
-        {/* Save Button */}
+
+        {/* Undo / Redo */}
+        <button
+          onClick={undo}
+          className="p-2 rounded-full text-gray-500 hover:text-blue-600 hover:bg-white shadow-sm transition-all duration-200"
+          aria-label="Annuler"
+        >
+          <Undo2 className="w-5 h-5" />
+        </button>
+        <button
+          onClick={redo}
+          className="p-2 rounded-full text-gray-500 hover:text-blue-600 hover:bg-white shadow-sm transition-all duration-200"
+          aria-label="Rétablir"
+        >
+          <Redo2 className="w-5 h-5" />
+        </button>
+
+        {/* Delete */}
+        <button
+          onClick={deleteSelected}
+          className="p-2 rounded-full text-gray-500 hover:text-red-600 hover:bg-white shadow-sm transition-all duration-200"
+          aria-label="Supprimer"
+        >
+          <Trash2 className="w-5 h-5" />
+        </button>
+
+        {/* Save */}
         <button
           onClick={exportAnnotations}
           className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-full font-semibold text-sm shadow-lg hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transition-all duration-200 ease-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           <Save className="inline-block w-4 h-4 mr-2" />
-           Sauvegarder
+          Sauvegarder
         </button>
       </div>
     </div>
@@ -105,4 +76,5 @@ const TopBar = ({
     <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-200 to-transparent"></div>
   </div>
 );
+
 export default TopBar;

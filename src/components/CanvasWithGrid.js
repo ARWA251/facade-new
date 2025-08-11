@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef ,useEffect, useRef} from 'react';
 
 const CanvasWithGrid = forwardRef(({ className = '', width = 800, height = 600 }, ref) => {
   return (
@@ -14,7 +14,14 @@ const CanvasWithGrid = forwardRef(({ className = '', width = 800, height = 600 }
             'linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)'
         }}
       />
-      <canvas ref={ref} className="w-full h-full" />
+      <div style={{
+  width: '100%',
+  height: '100%',
+  position: 'relative',
+}} >
+  <canvas ref={ref}></canvas>
+</div>
+      
     </div>
   );
 });

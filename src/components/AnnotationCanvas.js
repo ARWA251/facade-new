@@ -1,7 +1,9 @@
-   import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
+import LayerPanel from './LayerPanel';
+
 import CropModal from './CropModal';
 import CanvasWithGrid from './CanvasWithGrid';
 import ScaleModal from './ScaleModal';
@@ -42,7 +44,30 @@ const AnnotationCanvas = () => {
   const [drawingActive, setDrawingActive] = useState(false);
   const [polygonActive, setPolygonActive] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState('fenetre');
+const [layerVisibility, setLayerVisibility] = useState({
+    fenetre: true,
+    porte: true,
+    facade: true,
+    processedImage: true,
+  });
+  const layerVisibilityRef = useRef(layerVisibility);
+  const processedImageRef = useRef(null);
 
+  const toggleLayer = (layer) => {
+    setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
+  };
+    useEffect(() => {
+    layerVisibilityRef.current = layerVisibility;
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    canvas.getObjects().forEach((obj) => {
+      const type = obj.dataType;
+      if (type && layerVisibility.hasOwnProperty(type)) {
+        obj.visible = layerVisibility[type];
+      }
+    });
+    canvas.requestRenderAll();
+  }, [layerVisibility]);
   const annotationsHistory = useRef([]);
   const redoStack = useRef([]);
   const cropPoints = useRef([]);
@@ -181,8 +206,27 @@ const AnnotationCanvas = () => {
     });
     fabricRef.current = canvas;
 
-    canvas.setWidth(800);
-    canvas.setHeight(600);
+    const resizeCanvas = () => {
+      const parent = canvasRef.current.parentElement;
+      const width = parent.clientWidth;
+      const height = parent.clientHeight;
+      console.log("width :",width)
+      console.log("height =",height)
+      canvas.setWidth(600);
+      canvas.setHeight(600);
+
+      if (processedImageRef.current) {
+        const img = processedImageRef.current;
+        const scale = Math.min(width / img.width, height / img.height);
+       img.scale(scale);
+        canvas.centerObject(img);
+        img.setCoords();
+      }
+      canvas.renderAll();
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     
     canvas.on('mouse:down', function (opt) {
@@ -258,7 +302,10 @@ const AnnotationCanvas = () => {
           cornerStyle: 'rect',
           cornerSize: 6,
           cornerColor: color.stroke,
-          borderColor: color.stroke
+          borderColor: color.stroke,
+          visible: layerVisibilityRef.current[selectedEntityRef.current],
+
+
         });
 
         rectRef.current = rect;
@@ -350,7 +397,12 @@ const AnnotationCanvas = () => {
           cornerStyle: 'rect',
           cornerSize: 6,
           cornerColor: color.stroke,
-          borderColor: color.stroke
+          borderColor: color.stroke,
+
+          visible: layerVisibilityRef.current[selectedEntityRef.current],
+
+
+          
         }
       );
 
@@ -373,7 +425,10 @@ const AnnotationCanvas = () => {
       canvas.renderAll();
     });
 
-    return () => canvas.dispose();
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.dispose();
+    };
   }, []);
 
   const toggleDrawing = () => {
@@ -531,6 +586,22 @@ const toggleScaleMode = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
+const deleteSelected = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length) {
+      activeObjects.forEach((obj) => {
+        canvas.remove(obj);
+        const idx = annotationsHistory.current.indexOf(obj);
+        if (idx !== -1) {
+          annotationsHistory.current.splice(idx, 1);
+        }
+      });
+      canvas.discardActiveObject();
+      canvas.requestRenderAll();
+    }
+  };
 
   // Fonction de crop corrigée
  const handleCropValidate = () => {
@@ -565,6 +636,7 @@ const toggleScaleMode = () => {
     const croppedImageUrl = URL.createObjectURL(blob);
     addImageToCanvas(croppedImageUrl, { revokeUrl: true });
 
+
     // Réinitialisation
     setCropMode(null);
     setSelectedImage(null);
@@ -584,6 +656,9 @@ const toggleScaleMode = () => {
     reader.onload = function (event) {
       const imageUrl = event.target.result;
       setSelectedImage(imageUrl);
+      addImageToCanvas(imageUrl);
+
+
       setCropMode('cropImage');
       
       // Réinitialiser le crop
@@ -591,34 +666,37 @@ const toggleScaleMode = () => {
       setCompletedCrop(null);
     };
     reader.readAsDataURL(file);
+    //Reset the file input after each upload so that selecting the same image again reopens the cropping workflow
+    e.target.value = null;
   };
 
   // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
-  const addImageToCanvas = (imageUrl, { revokeUrl = false } = {}) => {
+  const addImageToCanvas = async (imageUrl, { revokeUrl = false } = {}) => {
+
     if (!imageUrl) return;
 
     const canvas = fabricRef.current;
-    const htmlImg = new window.Image();
-
-    htmlImg.onload = function () {
-      // Flatten the image onto an offscreen canvas to remove any transparency or orientation data
-      const flattenCanvas = document.createElement('canvas');
-      flattenCanvas.width = htmlImg.width;
-      flattenCanvas.height = htmlImg.height;
-      const flattenCtx = flattenCanvas.getContext('2d');
-      flattenCtx.drawImage(htmlImg, 0, 0);
+    try {
+      const fabricImg = await FabricImage.fromURL(imageUrl);
+// // Remove any previously added images so the new one replaces it
+//     canvas.getObjects('image').forEach((img) => canvas.remove(img));
+//     canvas.requestRenderAll();
+    if (processedImageRef.current) {
+      canvas.remove(processedImageRef.current);
+    }
+    
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
 
-      const scaleX = canvasWidth / htmlImg.width;
-      const scaleY = canvasHeight / htmlImg.height;
-      const scale = Math.min(scaleX, scaleY) * 0.9;
+      const scaleX = canvasWidth / fabricImg.width;
+      const scaleY = canvasHeight / fabricImg.height;
+      const scale = Math.min(scaleX, scaleY) ;
+            fabricImg.scale(scale);
 
-      const fabricImg = new FabricImage(flattenCanvas, {
-        scaleX: scale,
-        scaleY: scale,
-        left: (canvasWidth - htmlImg.width * scale) / 2,
-        top: (canvasHeight - htmlImg.height * scale) / 2,
+       fabricImg.set({
+        originX: 'center',
+        originY: 'center',
+      
         selectable: false,
         evented: false,
         lockMovementX: true,
@@ -627,20 +705,24 @@ const toggleScaleMode = () => {
         lockScalingX: true,
         lockScalingY: true,
         hoverCursor: 'default',
-        moveCursor: 'default'
-      });
+        moveCursor: 'default', 
+        dataType: 'processedImage',
+        visible: layerVisibilityRef.current.processedImage,
 
+      });
       canvas.add(fabricImg);
+
+      processedImageRef.current = fabricImg;
+      canvas.insertAt(fabricImg, 0);
       canvas.requestRenderAll();
 
       if (revokeUrl) {
         setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
       }
 
-    };
-
-    // Définir la source après `onload` pour garantir un chargement correct
-    htmlImg.src = imageUrl;
+    } catch (error) {
+      console.error('Failed to load image', error);
+    }
   };
 
   // Ajoute l'image sélectionnée sans appliquer de crop
@@ -648,36 +730,51 @@ const toggleScaleMode = () => {
     if (!selectedImage) return;
     
     addImageToCanvas(selectedImage);
+
     setCropMode(null);
     setSelectedImage(null);
   };
 
 
   return (
-    <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
-      <main className="flex-1 flex flex-col order-1 md:order-2">
-        <TopBar
+  <div className="relative flex flex-col h-screen bg-gray-50">
+      <TopBar
+        undo={undo}
+        redo={redo}
+        exportAnnotations={exportAnnotations}
+        handleImageUpload={handleImageUpload}
+        deleteSelected={deleteSelected}
+
+      />
+
+      <div className="flex flex-1">
+        <Toolbox
           drawingActive={drawingActive}
           polygonActive={polygonActive}
           scaleActive={scaleActive}
-
           toggleDrawing={toggleDrawing}
           togglePolygonDrawing={togglePolygonDrawing}
           toggleScaleMode={toggleScaleMode}
-
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
-          exportAnnotations={exportAnnotations}
-          handleImageUpload={handleImageUpload}
         />
+      <main className="flex-1 flex flex-col">
 
-        <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
-          <CanvasWithGrid ref={canvasRef} width={800} height={600} />
+
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full">
+            <CanvasWithGrid ref={canvasRef} width="100%" height="100%" />
         </div>
       </main>
 
-      <Toolbox undo={undo} redo={redo} />
-      <ScaleModal
+<LayerPanel
+          layerVisibility={layerVisibility}
+          toggleLayer={toggleLayer}
+        />
+      </div>
+     
+      
+      
+       <ScaleModal
         isOpen={scaleModalOpen}
         onSubmit={(cm) => {
           if (pendingScaleLength) {
