@@ -12,6 +12,7 @@ const Toolbox = ({
   setSelectedEntity,
 }) => {
   const [showPolygonDropdown, setShowPolygonDropdown] = useState(false);
+  const [showRectangleDropdown, setShowRectangleDropdown] = useState(false);
 
   const handlePolygonClick = () => {
     if (polygonActive) {
@@ -21,10 +22,24 @@ const Toolbox = ({
     }
   };
 
+  const handleRectangleClick = () => {
+    if (drawingActive) {
+      toggleDrawing();
+    } else {
+      setShowRectangleDropdown((prev) => !prev);
+    }
+  };
+
   const startPolygonWithType = (type) => {
     setSelectedEntity(type);
     setShowPolygonDropdown(false);
     togglePolygonDrawing();
+  };
+
+  const startRectangleWithType = (type) => {
+    setSelectedEntity(type);
+    setShowRectangleDropdown(false);
+    toggleDrawing();
   };
 
   return (
@@ -32,16 +47,40 @@ const Toolbox = ({
       <div className="flex flex-row md:flex-col items-center space-x-4 md:space-x-0 md:space-y-4">
         {/* Drawing Tools */}
         <div className="flex flex-row md:flex-col items-center bg-gray-100 rounded-full p-1 shadow-inner space-x-2 md:space-x-0 md:space-y-2">
-          <button
-            onClick={toggleDrawing}
-            className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-              drawingActive
-                ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                : 'text-gray-700 hover:bg-white hover:shadow-sm'
-            }`}
-          >
-            Rectangle
-          </button>
+          <div className="relative">
+            <button
+              onClick={handleRectangleClick}
+              className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+                drawingActive
+                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                  : 'text-gray-700 hover:bg-white hover:shadow-sm'
+              }`}
+            >
+              Rectangle
+            </button>
+            {showRectangleDropdown && !drawingActive && (
+              <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
+                <button
+                  className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => startRectangleWithType('fenetre')}
+                >
+                  Fenêtre
+                </button>
+                <button
+                  className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => startRectangleWithType('porte')}
+                >
+                  Porte
+                </button>
+                <button
+                  className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => startRectangleWithType('facade')}
+                >
+                  Façade
+                </button>
+              </div>
+            )}
+          </div>
           <div className="relative">
             <button
               onClick={handlePolygonClick}
