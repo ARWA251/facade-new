@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ruler } from 'lucide-react';
+import { Ruler, Square, Shapes } from 'lucide-react';
 
 const Toolbox = ({
   drawingActive,
@@ -50,13 +50,14 @@ const Toolbox = ({
           <div className="relative">
             <button
               onClick={handleRectangleClick}
-              className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
                 drawingActive
                   ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                  : 'text-gray-700 hover:bg-white hover:shadow-sm'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
               }`}
             >
-              Rectangle
+              <Square className="w-4 h-4" />
+              <span>Rectangle</span>
             </button>
             {showRectangleDropdown && !drawingActive && (
               <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
@@ -64,19 +65,19 @@ const Toolbox = ({
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startRectangleWithType('fenetre')}
                 >
-                  Fenêtre
+                  🪟 Fenêtre
                 </button>
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startRectangleWithType('porte')}
                 >
-                  Porte
+                  🚪 Porte
                 </button>
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startRectangleWithType('facade')}
                 >
-                  Façade
+                  🏢 Façade
                 </button>
               </div>
             )}
@@ -84,13 +85,14 @@ const Toolbox = ({
           <div className="relative">
             <button
               onClick={handlePolygonClick}
-              className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
                 polygonActive
                   ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                  : 'text-gray-700 hover:bg-white hover:shadow-sm'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
               }`}
             >
-              Polygon
+              <Shapes className="w-4 h-4" />
+              <span>Polygon</span>
             </button>
             {showPolygonDropdown && !polygonActive && (
               <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
@@ -98,33 +100,33 @@ const Toolbox = ({
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startPolygonWithType('fenetre')}
                 >
-                  Fenêtre
+                  🪟 Fenêtre
                 </button>
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startPolygonWithType('porte')}
                 >
-                  Porte
+                  🚪 Porte
                 </button>
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startPolygonWithType('facade')}
                 >
-                  Façade
+                  🏢 Façade
                 </button>
               </div>
             )}
           </div>
           <button
             onClick={toggleScaleMode}
-            className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
               scaleActive
                 ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                : 'text-gray-700 hover:bg-white hover:shadow-sm'
+                : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
             }`}
           >
-            <Ruler className="inline-block w-4 h-4 mr-1" />
-            Échelle
+            <Ruler className="w-4 h-4" />
+            <span>Échelle</span>
           </button>
         </div>
       </div>
