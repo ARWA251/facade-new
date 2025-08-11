@@ -48,15 +48,30 @@ const AnnotationCanvas = () => {
     fenetre: true,
     porte: true,
     facade: true,
-    baseImage: false,
     processedImage: true,
   });
   const layerVisibilityRef = useRef(layerVisibility);
-  const baseImageRef = useRef(null);
   const processedImageRef = useRef(null);
 
   const toggleLayer = (layer) => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
+  };
+
+  const deleteSelected = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length) {
+      activeObjects.forEach((obj) => {
+        canvas.remove(obj);
+        const idx = annotationsHistory.current.indexOf(obj);
+        if (idx !== -1) {
+          annotationsHistory.current.splice(idx, 1);
+        }
+      });
+      canvas.discardActiveObject();
+      canvas.requestRenderAll();
+    }
   };
 
   // History stacks for undo/redo operations
@@ -610,7 +625,7 @@ const toggleScaleMode = () => {
     if (!blob) return;
 
     const croppedImageUrl = URL.createObjectURL(blob);
-    addImageToCanvas(croppedImageUrl, { layer: 'processedImage', revokeUrl: true });
+    addImageToCanvas(croppedImageUrl, { revokeUrl: true });
 
     // Réinitialisation
     setCropMode(null);
@@ -631,7 +646,7 @@ const toggleScaleMode = () => {
     reader.onload = function (event) {
       const imageUrl = event.target.result;
       setSelectedImage(imageUrl);
-      addImageToCanvas(imageUrl, { layer: 'baseImage' });
+      addImageToCanvas(imageUrl);
       setCropMode('cropImage');
 
       // Réinitialiser le crop
@@ -644,13 +659,12 @@ const toggleScaleMode = () => {
   };
 
   // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
-  const addImageToCanvas = (imageUrl, { layer = 'baseImage', revokeUrl = false } = {}) => {
+  const addImageToCanvas = (imageUrl, { revokeUrl = false } = {}) => {
     if (!imageUrl) return;
 
     const canvas = fabricRef.current;
-    const ref = layer === 'baseImage' ? baseImageRef : processedImageRef;
-    if (ref.current) {
-      canvas.remove(ref.current);
+    if (processedImageRef.current) {
+      canvas.remove(processedImageRef.current);
     }
 
     const htmlImg = new window.Image();
@@ -683,16 +697,12 @@ const toggleScaleMode = () => {
         lockScalingY: true,
         hoverCursor: 'default',
         moveCursor: 'default',
-        dataType: layer,
-        visible: layerVisibilityRef.current[layer],
+        dataType: 'processedImage',
+        visible: layerVisibilityRef.current.processedImage,
       });
 
-      ref.current = fabricImg;
-      if (layer === 'baseImage') {
-        canvas.insertAt(0, fabricImg);
-      } else {
-        canvas.add(fabricImg);
-      }
+      processedImageRef.current = fabricImg;
+      canvas.insertAt(fabricImg, 0);
       canvas.requestRenderAll();
 
       if (revokeUrl) {
@@ -708,7 +718,7 @@ const toggleScaleMode = () => {
   const addImageDirectly = () => {
     if (!selectedImage) return;
 
-    addImageToCanvas(selectedImage, { layer: 'baseImage' });
+    addImageToCanvas(selectedImage);
     setCropMode(null);
     setSelectedImage(null);
   };
@@ -721,6 +731,7 @@ const toggleScaleMode = () => {
         redo={redo}
         exportAnnotations={exportAnnotations}
         handleImageUpload={handleImageUpload}
+        deleteSelected={deleteSelected}
       />
 
       <div className="flex flex-1">
