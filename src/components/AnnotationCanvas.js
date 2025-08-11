@@ -60,9 +60,9 @@ const [layerVisibility, setLayerVisibility] = useState({
     const parent = canvasRef.current.parentElement;
     const width = parent.clientWidth;
     const height = parent.clientHeight;
-    canvas.setWidth(width);
-    canvas.setHeight(height);
-
+    canvas.setWidth(600);
+    canvas.setHeight(800);
+   
     if (processedImageRef.current) {
       const img = processedImageRef.current;
       const scale = Math.min(width / img.width, height / img.height);
