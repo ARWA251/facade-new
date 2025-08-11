@@ -83,6 +83,8 @@ l'utilisateur ferme la forme, l'aire est calculée via la **formule de la
 corde** ("shoelace formula") et le périmètre par la somme des distances entre
 points successifs (`Math.hypot`). Ces valeurs peuvent ensuite être utilisées
 pour afficher des mesures précises.
+Les rectangles sont eux aussi exportés comme des polygones ; leur aire et leur
+périmètre sont donc calculés de la même manière.
 
 ### Conversion géographique
 La fonction `pixelToGeo` effectue une interpolation linéaire entre les

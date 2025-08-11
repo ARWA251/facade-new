@@ -514,10 +514,10 @@ const toggleScaleMode = () => {
           pixelToGeo(left, top, imgWidth, imgHeight)
         ];
         if (scaleRatio) {
+          const perimeterPx = 2 * (width + height);
           metrics = {
-            width_cm: width * scaleRatio,
-            height_cm: height * scaleRatio,
-            area_cm2: width * scaleRatio * height * scaleRatio,
+            area_cm2: width * height * scaleRatio * scaleRatio,
+            perimeter_cm: perimeterPx * scaleRatio,
           };
         }
       } else if (obj.type === 'polygon') {
