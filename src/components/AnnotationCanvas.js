@@ -217,10 +217,16 @@ const AnnotationCanvas = () => {
     });
     fabricRef.current = canvas;
 
-    canvas.setWidth(800);
-    canvas.setHeight(600);
+    const resizeCanvas = () => {
+      const parent = canvasRef.current.parentElement;
+      canvas.setWidth(parent.clientWidth);
+      canvas.setHeight(parent.clientHeight);
+      canvas.renderAll();
+    };
 
-    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
     canvas.on('mouse:down', function (opt) {
       const pointer = canvas.getPointer(opt.e);
       if (isScaleMode.current) {
@@ -411,7 +417,10 @@ const AnnotationCanvas = () => {
       canvas.renderAll();
     });
 
-    return () => canvas.dispose();
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.dispose();
+    };
   }, []);
 
   const toggleDrawing = () => {
@@ -706,8 +715,8 @@ const toggleScaleMode = () => {
 
 
   return (
-    <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
-      <main className="flex-1 flex flex-col order-1 md:order-2">
+    <div className="relative flex flex-row h-screen bg-gray-50">
+      <main className="flex-1 flex flex-col order-2">
         <TopBar
           undo={undo}
           redo={redo}
@@ -715,10 +724,10 @@ const toggleScaleMode = () => {
           handleImageUpload={handleImageUpload}
         />
 
-        <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
-          <CanvasWithGrid ref={canvasRef} width={1600} height={900} />
-        </div>
-      </main>
+          <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full">
+            <CanvasWithGrid ref={canvasRef} width="100%" height="100%" />
+          </div>
+        </main>
 
       <Toolbox
         drawingActive={drawingActive}
