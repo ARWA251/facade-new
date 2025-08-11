@@ -234,8 +234,23 @@ const AnnotationCanvas = () => {
 
     const resizeCanvas = () => {
       const parent = canvasRef.current.parentElement;
-      canvas.setWidth(parent.clientWidth);
-      canvas.setHeight(parent.clientHeight);
+      const width = parent.clientWidth;
+      const height = parent.clientHeight;
+
+      canvas.setWidth(width);
+      canvas.setHeight(height);
+
+      if (processedImageRef.current) {
+        const img = processedImageRef.current;
+        const scale = Math.min(width / img.width, height / img.height);
+        img.set({
+          scaleX: scale,
+          scaleY: scale,
+          left: width / 2,
+          top: height / 2,
+        });
+      }
+
       canvas.renderAll();
     };
 
@@ -675,13 +690,15 @@ const toggleScaleMode = () => {
 
       const scaleX = canvasWidth / fabricImg.width;
       const scaleY = canvasHeight / fabricImg.height;
-      const scale = Math.min(scaleX, scaleY) * 0.9;
+      const scale = Math.min(scaleX, scaleY);
 
       fabricImg.set({
+        originX: 'center',
+        originY: 'center',
         scaleX: scale,
         scaleY: scale,
-        left: (canvasWidth - fabricImg.width * scale) / 2,
-        top: (canvasHeight - fabricImg.height * scale) / 2,
+        left: canvasWidth / 2,
+        top: canvasHeight / 2,
         selectable: false,
         evented: false,
         lockMovementX: true,
