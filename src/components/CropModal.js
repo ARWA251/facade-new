@@ -35,7 +35,7 @@ const CropModal = ({
         </div>
 
         {/* Crop Area */}
-        <div className="relative bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-inner mb-6">
+        <div className="relative bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-inner mb-6 flex justify-center items-center">
           <ReactCrop
             crop={crop}
             onChange={(_, percentCrop) => setCrop(percentCrop)}
@@ -46,7 +46,7 @@ const CropModal = ({
             <img
               ref={imgRef}
               src={selectedImage}
-              className="max-w-full max-h-[60vh] rounded-lg shadow-lg"
+              className="max-w-full max-h-[60vh] rounded-lg shadow-lg mx-auto"
               onLoad={() => {
                 if (imgRef.current) {
                   const { width, height } = imgRef.current;
