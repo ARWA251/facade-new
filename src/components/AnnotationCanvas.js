@@ -715,35 +715,38 @@ const toggleScaleMode = () => {
 
 
   return (
-    <div className="relative flex flex-row h-screen bg-gray-50">
-      <main className="flex-1 flex flex-col order-2">
-        <TopBar
-          undo={undo}
-          redo={redo}
-          exportAnnotations={exportAnnotations}
-          handleImageUpload={handleImageUpload}
+    <div className="relative flex flex-col h-screen bg-gray-50">
+      <TopBar
+        undo={undo}
+        redo={redo}
+        exportAnnotations={exportAnnotations}
+        handleImageUpload={handleImageUpload}
+      />
+
+      <div className="flex flex-1">
+        <Toolbox
+          drawingActive={drawingActive}
+          polygonActive={polygonActive}
+          scaleActive={scaleActive}
+          toggleDrawing={toggleDrawing}
+          togglePolygonDrawing={togglePolygonDrawing}
+          toggleScaleMode={toggleScaleMode}
+          selectedEntity={selectedEntity}
+          setSelectedEntity={setSelectedEntity}
         />
 
+        <main className="flex-1 flex flex-col">
           <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full">
             <CanvasWithGrid ref={canvasRef} width="100%" height="100%" />
           </div>
         </main>
 
-      <Toolbox
-        drawingActive={drawingActive}
-        polygonActive={polygonActive}
-        scaleActive={scaleActive}
-        toggleDrawing={toggleDrawing}
-        togglePolygonDrawing={togglePolygonDrawing}
-        toggleScaleMode={toggleScaleMode}
-        selectedEntity={selectedEntity}
-        setSelectedEntity={setSelectedEntity}
-      />
+        <LayerPanel
+          layerVisibility={layerVisibility}
+          toggleLayer={toggleLayer}
+        />
+      </div>
 
-      <LayerPanel
-        layerVisibility={layerVisibility}
-        toggleLayer={toggleLayer}
-      />
       <ScaleModal
         isOpen={scaleModalOpen}
         onSubmit={(cm) => {

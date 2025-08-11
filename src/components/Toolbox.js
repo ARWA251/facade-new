@@ -43,7 +43,7 @@ const Toolbox = ({
   };
 
   return (
-    <aside className="order-1 w-64 bg-gradient-to-b from-white via-gray-50 to-white border-r border-gray-200 shadow-sm flex flex-col items-center justify-start p-4">
+    <aside className="w-64 bg-gradient-to-b from-white via-gray-50 to-white border-r border-gray-200 shadow-sm flex flex-col items-center justify-start p-4">
         <div className="flex flex-col items-center space-y-4">
           {/* Drawing Tools */}
           <div className="flex flex-col items-center bg-gray-100 rounded-full p-1 shadow-inner space-y-2">
