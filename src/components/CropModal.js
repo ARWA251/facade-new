@@ -18,7 +18,7 @@ const CropModal = ({
 
   return (
     <div className="absolute inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white p-8 rounded-2xl max-w-full sm:max-w-[85%] max-h-[90%] overflow-auto shadow-2xl border border-gray-200">
+      <div className="bg-white p-8 rounded-2xl max-w-full sm:max-w-[85%] max-h-[90%] overflow-hidden shadow-2xl border border-gray-200">
         {/* Header */}
         <div className="flex items-center space-x-3 mb-6">
           <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
@@ -41,12 +41,12 @@ const CropModal = ({
             onChange={(_, percentCrop) => setCrop(percentCrop)}
             onComplete={(c) => setCompletedCrop(c)}
             aspect={undefined}
-            className="rounded-lg overflow-hidden"
+            className="rounded-lg overflow-hidden flex items-center justify-center"
           >
             <img
               ref={imgRef}
               src={selectedImage}
-              className="max-w-full max-h-[60vh] rounded-lg shadow-lg mx-auto"
+              className="block mx-auto max-w-full max-h-[60vh] rounded-lg shadow-lg object-contain"
               onLoad={() => {
                 if (imgRef.current) {
                   const { width, height } = imgRef.current;
