@@ -8,7 +8,6 @@ const LayerPanel = ({ layerVisibility, toggleLayer }) => (
         { key: 'fenetre', label: 'Fenêtre' },
         { key: 'porte', label: 'Porte' },
         { key: 'facade', label: 'Façade' },
-        { key: 'baseImage', label: 'Image de base' },
         { key: 'processedImage', label: 'Image traitée' },
       ].map(({ key, label }) => (
         <label

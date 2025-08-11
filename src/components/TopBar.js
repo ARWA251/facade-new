@@ -1,11 +1,12 @@
 import React from 'react';
-import { Image as ImageIcon, Save, Undo2, Redo2 } from 'lucide-react';
+import { Image as ImageIcon, Save, Undo2, Redo2, Trash2 } from 'lucide-react';
 
 const TopBar = ({
   undo,
   redo,
   exportAnnotations,
   handleImageUpload,
+  deleteSelected,
 }) => (
   <div className="relative w-full bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200 shadow-sm">
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-6 py-5 gap-4">
@@ -50,6 +51,15 @@ const TopBar = ({
           aria-label="Rétablir"
         >
           <Redo2 className="w-5 h-5" />
+        </button>
+
+        {/* Delete */}
+        <button
+          onClick={deleteSelected}
+          className="p-2 rounded-full text-gray-500 hover:text-red-600 hover:bg-white shadow-sm transition-all duration-200"
+          aria-label="Supprimer"
+        >
+          <Trash2 className="w-5 h-5" />
         </button>
 
         {/* Save */}
