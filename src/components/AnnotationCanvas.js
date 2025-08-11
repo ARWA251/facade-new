@@ -757,7 +757,7 @@ const deleteSelected = () => {
       <main className="flex-1 flex flex-col">
 
 
-        <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full">
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full overflow-hidden">
             <CanvasWithGrid ref={canvasRef} width="100%" height="100%" />
         </div>
       </main>
