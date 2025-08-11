@@ -3,6 +3,7 @@ import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabri
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import LayerPanel from './LayerPanel';
+
 import CropModal from './CropModal';
 import CanvasWithGrid from './CanvasWithGrid';
 import ScaleModal from './ScaleModal';
@@ -43,8 +44,7 @@ const AnnotationCanvas = () => {
   const [drawingActive, setDrawingActive] = useState(false);
   const [polygonActive, setPolygonActive] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState('fenetre');
-
-  const [layerVisibility, setLayerVisibility] = useState({
+const [layerVisibility, setLayerVisibility] = useState({
     fenetre: true,
     porte: true,
     facade: true,
@@ -56,25 +56,18 @@ const AnnotationCanvas = () => {
   const toggleLayer = (layer) => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
   };
-
-  const deleteSelected = () => {
+    useEffect(() => {
+    layerVisibilityRef.current = layerVisibility;
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const activeObjects = canvas.getActiveObjects();
-    if (activeObjects.length) {
-      activeObjects.forEach((obj) => {
-        canvas.remove(obj);
-        const idx = annotationsHistory.current.indexOf(obj);
-        if (idx !== -1) {
-          annotationsHistory.current.splice(idx, 1);
-        }
-      });
-      canvas.discardActiveObject();
-      canvas.requestRenderAll();
-    }
-  };
-
-  // History stacks for undo/redo operations
+    canvas.getObjects().forEach((obj) => {
+      const type = obj.dataType;
+      if (type && layerVisibility.hasOwnProperty(type)) {
+        obj.visible = layerVisibility[type];
+      }
+    });
+    canvas.requestRenderAll();
+  }, [layerVisibility]);
   const annotationsHistory = useRef([]);
   const redoStack = useRef([]);
   const cropPoints = useRef([]);
@@ -107,14 +100,11 @@ const AnnotationCanvas = () => {
     maxLat: 34.04
   };
 
-  // Convert pixel coordinates to geographic longitude/latitude using linear interpolation
   const pixelToGeo = (x, y, imgWidth, imgHeight) => {
     const lon = geoBounds.minLon + (x / imgWidth) * (geoBounds.maxLon - geoBounds.minLon);
     const lat = geoBounds.maxLat - (y / imgHeight) * (geoBounds.maxLat - geoBounds.minLat);
     return [lon, lat];
   };
-
-  // Compute polygon area with the shoelace formula
   const polygonArea = (points) => {
     let area = 0;
     for (let i = 0; i < points.length; i++) {
@@ -125,7 +115,6 @@ const AnnotationCanvas = () => {
     return Math.abs(area) / 2;
   };
 
-  // Sum edge lengths to get the polygon perimeter
   const polygonPerimeter = (points) => {
     let per = 0;
     for (let i = 0; i < points.length; i++) {
@@ -141,22 +130,8 @@ const AnnotationCanvas = () => {
     selectedEntityRef.current = selectedEntity;
   }, [selectedEntity]);
 
-  useEffect(() => {
-    layerVisibilityRef.current = layerVisibility;
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    canvas.getObjects().forEach((obj) => {
-      const type = obj.dataType;
-      if (type && layerVisibility.hasOwnProperty(type)) {
-        obj.visible = layerVisibility[type];
-      }
-    });
-    canvas.requestRenderAll();
-  }, [layerVisibility]);
-
   
 
-  // Remove last annotation and place it on the redo stack
   const undo = () => {
     const canvas = fabricRef.current;
     if (!canvas) return;
@@ -170,7 +145,6 @@ const AnnotationCanvas = () => {
     }
   };
 
-  // Reapply an annotation from the redo stack
   const redo = () => {
     const canvas = fabricRef.current;
     if (!canvas) return;
@@ -226,37 +200,35 @@ const AnnotationCanvas = () => {
   };
 
   // Canvas initialisé une seule fois
-  const resizeCanvas = () => {
-    const canvas = fabricRef.current;
-    if (!canvas || !canvasRef.current) return;
-    const parent = canvasRef.current.parentElement;
-    const width = parent.clientWidth;
-    const height = parent.clientHeight;
-
-    canvas.setWidth(width);
-    canvas.setHeight(height);
-
-    if (processedImageRef.current) {
-      const img = processedImageRef.current;
-      const scale = Math.min(width / img.width, height / img.height);
-      img.scale(scale);
-      canvas.centerObject(img);
-      img.setCoords();
-    }
-
-    canvas.renderAll();
-  };
-
   useEffect(() => {
     const canvas = new Canvas(canvasRef.current, {
       backgroundColor: 'rgba(0,0,0,0)'
     });
     fabricRef.current = canvas;
 
-    const handleResize = () => resizeCanvas();
-    handleResize();
-    window.addEventListener('resize', handleResize);
+    const resizeCanvas = () => {
+      const parent = canvasRef.current.parentElement;
+      const width = parent.clientWidth;
+      const height = parent.clientHeight;
+      console.log("width :",width)
+      console.log("height =",height)
+      canvas.setWidth(600);
+      canvas.setHeight(600);
 
+      if (processedImageRef.current) {
+        const img = processedImageRef.current;
+        const scale = Math.min(width / img.width, height / img.height);
+       img.scale(scale);
+        canvas.centerObject(img);
+        img.setCoords();
+      }
+      canvas.renderAll();
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    
     canvas.on('mouse:down', function (opt) {
       const pointer = canvas.getPointer(opt.e);
       if (isScaleMode.current) {
@@ -332,6 +304,8 @@ const AnnotationCanvas = () => {
           cornerColor: color.stroke,
           borderColor: color.stroke,
           visible: layerVisibilityRef.current[selectedEntityRef.current],
+
+
         });
 
         rectRef.current = rect;
@@ -424,7 +398,11 @@ const AnnotationCanvas = () => {
           cornerSize: 6,
           cornerColor: color.stroke,
           borderColor: color.stroke,
+
           visible: layerVisibilityRef.current[selectedEntityRef.current],
+
+
+          
         }
       );
 
@@ -447,11 +425,11 @@ const AnnotationCanvas = () => {
       canvas.renderAll();
     });
 
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        canvas.dispose();
-      };
-    }, []);
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.dispose();
+    };
+  }, []);
 
   const toggleDrawing = () => {
     isDrawingMode.current = !isDrawingMode.current;
@@ -553,10 +531,10 @@ const toggleScaleMode = () => {
           pixelToGeo(left, top, imgWidth, imgHeight)
         ];
         if (scaleRatio) {
-          const perimeterPx = 2 * (width + height);
           metrics = {
-            area_cm2: width * height * scaleRatio * scaleRatio,
-            perimeter_cm: perimeterPx * scaleRatio,
+            width_cm: width * scaleRatio,
+            height_cm: height * scaleRatio,
+            area_cm2: width * scaleRatio * height * scaleRatio,
           };
         }
       } else if (obj.type === 'polygon') {
@@ -608,6 +586,22 @@ const toggleScaleMode = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
+const deleteSelected = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length) {
+      activeObjects.forEach((obj) => {
+        canvas.remove(obj);
+        const idx = annotationsHistory.current.indexOf(obj);
+        if (idx !== -1) {
+          annotationsHistory.current.splice(idx, 1);
+        }
+      });
+      canvas.discardActiveObject();
+      canvas.requestRenderAll();
+    }
+  };
 
   // Fonction de crop corrigée
  const handleCropValidate = () => {
@@ -642,6 +636,7 @@ const toggleScaleMode = () => {
     const croppedImageUrl = URL.createObjectURL(blob);
     addImageToCanvas(croppedImageUrl, { revokeUrl: true });
 
+
     // Réinitialisation
     setCropMode(null);
     setSelectedImage(null);
@@ -662,40 +657,46 @@ const toggleScaleMode = () => {
       const imageUrl = event.target.result;
       setSelectedImage(imageUrl);
       addImageToCanvas(imageUrl);
-      setCropMode('cropImage');
 
+
+      setCropMode('cropImage');
+      
       // Réinitialiser le crop
       setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
       setCompletedCrop(null);
     };
     reader.readAsDataURL(file);
-    // Reset the input so selecting the same file again re-triggers the change event
+    //Reset the file input after each upload so that selecting the same image again reopens the cropping workflow
     e.target.value = null;
   };
 
   // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
   const addImageToCanvas = async (imageUrl, { revokeUrl = false } = {}) => {
+
     if (!imageUrl) return;
 
     const canvas = fabricRef.current;
+    try {
+      const fabricImg = await FabricImage.fromURL(imageUrl);
+// // Remove any previously added images so the new one replaces it
+//     canvas.getObjects('image').forEach((img) => canvas.remove(img));
+//     canvas.requestRenderAll();
     if (processedImageRef.current) {
       canvas.remove(processedImageRef.current);
     }
-
-    try {
-      const fabricImg = await FabricImage.fromURL(imageUrl);
-
+    
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
 
       const scaleX = canvasWidth / fabricImg.width;
       const scaleY = canvasHeight / fabricImg.height;
-      const scale = Math.min(scaleX, scaleY);
+      const scale = Math.min(scaleX, scaleY) ;
+            fabricImg.scale(scale);
 
-      fabricImg.scale(scale);
-      fabricImg.set({
+       fabricImg.set({
         originX: 'center',
         originY: 'center',
+      
         selectable: false,
         evented: false,
         lockMovementX: true,
@@ -704,21 +705,21 @@ const toggleScaleMode = () => {
         lockScalingX: true,
         lockScalingY: true,
         hoverCursor: 'default',
-        moveCursor: 'default',
+        moveCursor: 'default', 
         dataType: 'processedImage',
         visible: layerVisibilityRef.current.processedImage,
+
       });
+      canvas.add(fabricImg);
 
       processedImageRef.current = fabricImg;
-      canvas.add(fabricImg);
-      canvas.centerObject(fabricImg);
-      fabricImg.setCoords();
-      canvas.moveTo(fabricImg, 0);
+      canvas.insertAt(fabricImg, 0);
       canvas.requestRenderAll();
 
       if (revokeUrl) {
         setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
       }
+
     } catch (error) {
       console.error('Failed to load image', error);
     }
@@ -727,21 +728,23 @@ const toggleScaleMode = () => {
   // Ajoute l'image sélectionnée sans appliquer de crop
   const addImageDirectly = () => {
     if (!selectedImage) return;
-
+    
     addImageToCanvas(selectedImage);
+
     setCropMode(null);
     setSelectedImage(null);
   };
 
 
   return (
-    <div className="relative flex flex-col h-screen bg-gray-50">
+  <div className="relative flex flex-col h-screen bg-gray-50">
       <TopBar
         undo={undo}
         redo={redo}
         exportAnnotations={exportAnnotations}
         handleImageUpload={handleImageUpload}
         deleteSelected={deleteSelected}
+
       />
 
       <div className="flex flex-1">
@@ -755,20 +758,23 @@ const toggleScaleMode = () => {
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
         />
+      <main className="flex-1 flex flex-col">
 
-        <main className="flex-1 flex flex-col">
-          <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full">
-            <CanvasWithGrid ref={canvasRef} width="100%" height="100%" onResize={resizeCanvas} />
-          </div>
-        </main>
 
-        <LayerPanel
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full">
+            <CanvasWithGrid ref={canvasRef} width="100%" height="100%" />
+        </div>
+      </main>
+
+<LayerPanel
           layerVisibility={layerVisibility}
           toggleLayer={toggleLayer}
         />
       </div>
-
-      <ScaleModal
+     
+      
+      
+       <ScaleModal
         isOpen={scaleModalOpen}
         onSubmit={(cm) => {
           if (pendingScaleLength) {
