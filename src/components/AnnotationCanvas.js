@@ -659,7 +659,7 @@ const toggleScaleMode = () => {
   };
 
   // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
-  const addImageToCanvas = (imageUrl, { revokeUrl = false } = {}) => {
+  const addImageToCanvas = async (imageUrl, { revokeUrl = false } = {}) => {
     if (!imageUrl) return;
 
     const canvas = fabricRef.current;
@@ -667,27 +667,21 @@ const toggleScaleMode = () => {
       canvas.remove(processedImageRef.current);
     }
 
-    const htmlImg = new window.Image();
+    try {
+      const fabricImg = await FabricImage.fromURL(imageUrl);
 
-    htmlImg.onload = function () {
-      // Flatten the image onto an offscreen canvas to remove any transparency or orientation data
-      const flattenCanvas = document.createElement('canvas');
-      flattenCanvas.width = htmlImg.width;
-      flattenCanvas.height = htmlImg.height;
-      const flattenCtx = flattenCanvas.getContext('2d');
-      flattenCtx.drawImage(htmlImg, 0, 0);
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
 
-      const scaleX = canvasWidth / htmlImg.width;
-      const scaleY = canvasHeight / htmlImg.height;
+      const scaleX = canvasWidth / fabricImg.width;
+      const scaleY = canvasHeight / fabricImg.height;
       const scale = Math.min(scaleX, scaleY) * 0.9;
 
-      const fabricImg = new FabricImage(flattenCanvas, {
+      fabricImg.set({
         scaleX: scale,
         scaleY: scale,
-        left: (canvasWidth - htmlImg.width * scale) / 2,
-        top: (canvasHeight - htmlImg.height * scale) / 2,
+        left: (canvasWidth - fabricImg.width * scale) / 2,
+        top: (canvasHeight - fabricImg.height * scale) / 2,
         selectable: false,
         evented: false,
         lockMovementX: true,
@@ -708,10 +702,9 @@ const toggleScaleMode = () => {
       if (revokeUrl) {
         setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
       }
-    };
-
-    // Définir la source après `onload` pour garantir un chargement correct
-    htmlImg.src = imageUrl;
+    } catch (error) {
+      console.error('Failed to load image', error);
+    }
   };
 
   // Ajoute l'image sélectionnée sans appliquer de crop
