@@ -1,4 +1,4 @@
-   import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
@@ -226,36 +226,36 @@ const AnnotationCanvas = () => {
   };
 
   // Canvas initialisé une seule fois
+  const resizeCanvas = () => {
+    const canvas = fabricRef.current;
+    if (!canvas || !canvasRef.current) return;
+    const parent = canvasRef.current.parentElement;
+    const width = parent.clientWidth;
+    const height = parent.clientHeight;
+
+    canvas.setWidth(width);
+    canvas.setHeight(height);
+
+    if (processedImageRef.current) {
+      const img = processedImageRef.current;
+      const scale = Math.min(width / img.width, height / img.height);
+      img.scale(scale);
+      canvas.centerObject(img);
+      img.setCoords();
+    }
+
+    canvas.renderAll();
+  };
+
   useEffect(() => {
     const canvas = new Canvas(canvasRef.current, {
       backgroundColor: 'rgba(0,0,0,0)'
     });
     fabricRef.current = canvas;
 
-    const resizeCanvas = () => {
-      const parent = canvasRef.current.parentElement;
-      const width = parent.clientWidth;
-      const height = parent.clientHeight;
-
-      canvas.setWidth(width);
-      canvas.setHeight(height);
-
-      if (processedImageRef.current) {
-        const img = processedImageRef.current;
-        const scale = Math.min(width / img.width, height / img.height);
-        img.set({
-          scaleX: scale,
-          scaleY: scale,
-          left: width / 2,
-          top: height / 2,
-        });
-      }
-
-      canvas.renderAll();
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    const handleResize = () => resizeCanvas();
+    handleResize();
+    window.addEventListener('resize', handleResize);
 
     canvas.on('mouse:down', function (opt) {
       const pointer = canvas.getPointer(opt.e);
@@ -447,11 +447,11 @@ const AnnotationCanvas = () => {
       canvas.renderAll();
     });
 
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      canvas.dispose();
-    };
-  }, []);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        canvas.dispose();
+      };
+    }, []);
 
   const toggleDrawing = () => {
     isDrawingMode.current = !isDrawingMode.current;
@@ -692,13 +692,10 @@ const toggleScaleMode = () => {
       const scaleY = canvasHeight / fabricImg.height;
       const scale = Math.min(scaleX, scaleY);
 
+      fabricImg.scale(scale);
       fabricImg.set({
         originX: 'center',
         originY: 'center',
-        scaleX: scale,
-        scaleY: scale,
-        left: canvasWidth / 2,
-        top: canvasHeight / 2,
         selectable: false,
         evented: false,
         lockMovementX: true,
@@ -713,7 +710,10 @@ const toggleScaleMode = () => {
       });
 
       processedImageRef.current = fabricImg;
-      canvas.insertAt(fabricImg, 0);
+      canvas.add(fabricImg);
+      canvas.centerObject(fabricImg);
+      fabricImg.setCoords();
+      canvas.moveTo(fabricImg, 0);
       canvas.requestRenderAll();
 
       if (revokeUrl) {
@@ -758,7 +758,7 @@ const toggleScaleMode = () => {
 
         <main className="flex-1 flex flex-col">
           <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full">
-            <CanvasWithGrid ref={canvasRef} width="100%" height="100%" />
+            <CanvasWithGrid ref={canvasRef} width="100%" height="100%" onResize={resizeCanvas} />
           </div>
         </main>
 
