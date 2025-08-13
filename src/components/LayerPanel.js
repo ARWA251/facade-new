@@ -1,7 +1,7 @@
 import React from 'react';
 
 const LayerPanel = ({ layerVisibility, toggleLayer }) => (
-  <aside className="w-64 bg-gradient-to-b from-white via-gray-50 to-white border-l border-gray-200 shadow-sm p-4">
+  <aside className="order-3 md:order-3 w-64 bg-gradient-to-b from-white via-gray-50 to-white border-l border-gray-200 shadow-sm p-4">
     <div className="flex flex-col space-y-3 text-sm text-gray-700">
       <span className="font-semibold text-gray-800">Calques</span>
       {[
