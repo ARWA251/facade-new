@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
@@ -52,6 +52,26 @@ const [layerVisibility, setLayerVisibility] = useState({
   });
   const layerVisibilityRef = useRef(layerVisibility);
   const processedImageRef = useRef(null);
+
+  const resizeCanvas = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    const parent = canvasRef.current.parentElement;
+    const width = parent.clientWidth;
+    const height = parent.clientHeight;
+    canvas.setWidth(width);
+    canvas.setHeight(height);
+
+    if (processedImageRef.current) {
+      const img = processedImageRef.current;
+      const scale = Math.min(width / img.width, height / img.height);
+      img.scale(scale);
+      canvas.centerObject(img);
+      img.setCoords();
+    }
+    canvas.renderAll();
+  }, []);
 
   const toggleLayer = (layer) => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
@@ -205,25 +225,6 @@ const [layerVisibility, setLayerVisibility] = useState({
       backgroundColor: 'rgba(0,0,0,0)'
     });
     fabricRef.current = canvas;
-
-    const resizeCanvas = () => {
-      const parent = canvasRef.current.parentElement;
-      const width = parent.clientWidth;
-      const height = parent.clientHeight;
-      console.log("width :",width)
-      console.log("height =",height)
-      canvas.setWidth(600);
-      canvas.setHeight(600);
-
-      if (processedImageRef.current) {
-        const img = processedImageRef.current;
-        const scale = Math.min(width / img.width, height / img.height);
-       img.scale(scale);
-        canvas.centerObject(img);
-        img.setCoords();
-      }
-      canvas.renderAll();
-    };
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -429,7 +430,7 @@ const [layerVisibility, setLayerVisibility] = useState({
       window.removeEventListener('resize', resizeCanvas);
       canvas.dispose();
     };
-  }, []);
+  }, [resizeCanvas]);
 
   const toggleDrawing = () => {
     isDrawingMode.current = !isDrawingMode.current;
@@ -672,31 +673,25 @@ const deleteSelected = () => {
 
   // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
   const addImageToCanvas = async (imageUrl, { revokeUrl = false } = {}) => {
-
     if (!imageUrl) return;
 
     const canvas = fabricRef.current;
+    resizeCanvas();
     try {
       const fabricImg = await FabricImage.fromURL(imageUrl);
-// // Remove any previously added images so the new one replaces it
-//     canvas.getObjects('image').forEach((img) => canvas.remove(img));
-//     canvas.requestRenderAll();
-    if (processedImageRef.current) {
-      canvas.remove(processedImageRef.current);
-    }
-    
+      if (processedImageRef.current) {
+        canvas.remove(processedImageRef.current);
+      }
+
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
+      const scale = Math.min(canvasWidth / fabricImg.width, canvasHeight / fabricImg.height);
 
-      const scaleX = canvasWidth / fabricImg.width;
-      const scaleY = canvasHeight / fabricImg.height;
-      const scale = Math.min(scaleX, scaleY) ;
-            fabricImg.scale(scale);
-
-       fabricImg.set({
+      fabricImg.set({
         originX: 'center',
         originY: 'center',
-      
+        left: canvasWidth / 2,
+        top: canvasHeight / 2,
         selectable: false,
         evented: false,
         lockMovementX: true,
@@ -705,21 +700,22 @@ const deleteSelected = () => {
         lockScalingX: true,
         lockScalingY: true,
         hoverCursor: 'default',
-        moveCursor: 'default', 
+        moveCursor: 'default',
         dataType: 'processedImage',
         visible: layerVisibilityRef.current.processedImage,
-
       });
-      canvas.add(fabricImg);
+      fabricImg.scale(scale);
 
+      canvas.add(fabricImg);
       processedImageRef.current = fabricImg;
       canvas.insertAt(fabricImg, 0);
+      canvas.centerObject(fabricImg);
+      fabricImg.setCoords();
       canvas.requestRenderAll();
 
       if (revokeUrl) {
         setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
       }
-
     } catch (error) {
       console.error('Failed to load image', error);
     }
