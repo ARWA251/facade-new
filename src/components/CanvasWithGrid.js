@@ -1,9 +1,9 @@
-import React, { forwardRef ,useEffect, useRef} from 'react';
+import React, { forwardRef } from 'react';
 
 const CanvasWithGrid = forwardRef(({ className = '', width = 800, height = 600 }, ref) => {
   return (
     <div
-      className={`bg-gray-100 border rounded-lg relative ${className}`}
+      className={`bg-gray-100 border rounded-lg relative flex items-center justify-center overflow-hidden ${className}`}
       style={{ width, height }}
     >
       <div
@@ -14,14 +14,7 @@ const CanvasWithGrid = forwardRef(({ className = '', width = 800, height = 600 }
             'linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)'
         }}
       />
-      <div style={{
-  width: '100%',
-  height: '100%',
-  position: 'relative',
-}} >
-  <canvas ref={ref}></canvas>
-</div>
-      
+      <canvas ref={ref} className="block max-w-full max-h-full" />
     </div>
   );
 });
