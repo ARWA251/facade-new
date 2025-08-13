@@ -128,12 +128,17 @@ const Toolbox = ({
               scaleActive
                 ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
                 : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
-              } ${!scaleSet ? 'opacity-50 cursor-not-allowed' : ''}`}
+            }`}
           >
             <Ruler className="w-4 h-4" />
             <span>Échelle</span>
           </button>
         </div>
+        {!scaleSet && (
+          <p className="text-center text-xs text-gray-500 mt-2 px-2">
+            Cliquez sur <span className="font-medium">Échelle</span> pour activer les outils.
+          </p>
+        )}
       </div>
     </aside>
   );
