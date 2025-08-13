@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
@@ -48,30 +48,12 @@ const [layerVisibility, setLayerVisibility] = useState({
     fenetre: true,
     porte: true,
     facade: true,
+    baseImage: false,
     processedImage: true,
   });
   const layerVisibilityRef = useRef(layerVisibility);
+  const baseImageRef = useRef(null);
   const processedImageRef = useRef(null);
-
-  const resizeCanvas = useCallback(() => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-
-    const parent = canvasRef.current.parentElement;
-    const width = parent.clientWidth;
-    const height = parent.clientHeight;
-    canvas.setWidth(600);
-    canvas.setHeight(800);
-   
-    if (processedImageRef.current) {
-      const img = processedImageRef.current;
-      const scale = Math.min(width / img.width, height / img.height);
-      img.scale(scale);
-      canvas.centerObject(img);
-      img.setCoords();
-    }
-    canvas.renderAll();
-  }, []);
 
   const toggleLayer = (layer) => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
@@ -226,8 +208,8 @@ const [layerVisibility, setLayerVisibility] = useState({
     });
     fabricRef.current = canvas;
 
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    canvas.setWidth(800);
+    canvas.setHeight(600);
 
     
     canvas.on('mouse:down', function (opt) {
@@ -426,11 +408,8 @@ const [layerVisibility, setLayerVisibility] = useState({
       canvas.renderAll();
     });
 
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      canvas.dispose();
-    };
-  }, [resizeCanvas]);
+    return () => canvas.dispose();
+  }, []);
 
   const toggleDrawing = () => {
     isDrawingMode.current = !isDrawingMode.current;
@@ -587,22 +566,6 @@ const toggleScaleMode = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
-const deleteSelected = () => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    const activeObjects = canvas.getActiveObjects();
-    if (activeObjects.length) {
-      activeObjects.forEach((obj) => {
-        canvas.remove(obj);
-        const idx = annotationsHistory.current.indexOf(obj);
-        if (idx !== -1) {
-          annotationsHistory.current.splice(idx, 1);
-        }
-      });
-      canvas.discardActiveObject();
-      canvas.requestRenderAll();
-    }
-  };
 
   // Fonction de crop corrigée
  const handleCropValidate = () => {
@@ -635,7 +598,7 @@ const deleteSelected = () => {
     if (!blob) return;
 
     const croppedImageUrl = URL.createObjectURL(blob);
-    addImageToCanvas(croppedImageUrl, { revokeUrl: true });
+    addImageToCanvas(croppedImageUrl, { layer: 'processedImage', revokeUrl: true });
 
 
     // Réinitialisation
@@ -657,7 +620,7 @@ const deleteSelected = () => {
     reader.onload = function (event) {
       const imageUrl = event.target.result;
       setSelectedImage(imageUrl);
-      addImageToCanvas(imageUrl);
+      addImageToCanvas(imageUrl, { layer: 'baseImage' });
 
 
       setCropMode('cropImage');
@@ -672,26 +635,38 @@ const deleteSelected = () => {
   };
 
   // Ajoute une image au canvas et optionnellement révoque l'URL après ajout
-  const addImageToCanvas = async (imageUrl, { revokeUrl = false } = {}) => {
+  const addImageToCanvas = (imageUrl, { layer = 'baseImage', revokeUrl = false } = {}) => {
+
     if (!imageUrl) return;
 
     const canvas = fabricRef.current;
-    resizeCanvas();
-    try {
-      const fabricImg = await FabricImage.fromURL(imageUrl);
-      if (processedImageRef.current) {
-        canvas.remove(processedImageRef.current);
-      }
-
+    const htmlImg = new window.Image();
+// // Remove any previously added images so the new one replaces it
+//     canvas.getObjects('image').forEach((img) => canvas.remove(img));
+//     canvas.requestRenderAll();
+    const ref = layer === 'baseImage' ? baseImageRef : processedImageRef;
+    if (ref.current) {
+      canvas.remove(ref.current);
+    }
+    htmlImg.onload = function () {
+      // Flatten the image onto an offscreen canvas to remove any transparency or orientation data
+      const flattenCanvas = document.createElement('canvas');
+      flattenCanvas.width = htmlImg.width;
+      flattenCanvas.height = htmlImg.height;
+      const flattenCtx = flattenCanvas.getContext('2d');
+      flattenCtx.drawImage(htmlImg, 0, 0);
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
-      const scale = Math.min(canvasWidth / fabricImg.width, canvasHeight / fabricImg.height);
 
-      fabricImg.set({
-        originX: 'center',
-        originY: 'center',
-        left: canvasWidth / 2,
-        top: canvasHeight / 2,
+      const scaleX = canvasWidth / htmlImg.width;
+      const scaleY = canvasHeight / htmlImg.height;
+      const scale = Math.min(scaleX, scaleY) * 0.9;
+
+      const fabricImg = new FabricImage(flattenCanvas, {
+        scaleX: scale,
+        scaleY: scale,
+        left: (canvasWidth - htmlImg.width * scale) / 2,
+        top: (canvasHeight - htmlImg.height * scale) / 2,
         selectable: false,
         evented: false,
         lockMovementX: true,
@@ -700,32 +675,35 @@ const deleteSelected = () => {
         lockScalingX: true,
         lockScalingY: true,
         hoverCursor: 'default',
-        moveCursor: 'default',
-        dataType: 'processedImage',
-        visible: layerVisibilityRef.current.processedImage,
-      });
-      fabricImg.scale(scale);
+        moveCursor: 'default', dataType: layer,
+        visible: layerVisibilityRef.current[layer],
 
+      });
+ref.current = fabricImg;
       canvas.add(fabricImg);
-      processedImageRef.current = fabricImg;
-      canvas.insertAt(fabricImg, 0);
-      canvas.centerObject(fabricImg);
-      fabricImg.setCoords();
+//hna
+      if (layer === 'baseImage') {
+        canvas.insertAt(0, fabricImg);
+      } else {
+        canvas.add(fabricImg);
+      }
       canvas.requestRenderAll();
 
       if (revokeUrl) {
         setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
       }
-    } catch (error) {
-      console.error('Failed to load image', error);
-    }
+
+    };
+
+    // Définir la source après `onload` pour garantir un chargement correct
+    htmlImg.src = imageUrl;
   };
 
   // Ajoute l'image sélectionnée sans appliquer de crop
   const addImageDirectly = () => {
     if (!selectedImage) return;
     
-    addImageToCanvas(selectedImage);
+    addImageToCanvas(selectedImage, { layer: 'baseImage' });
 
     setCropMode(null);
     setSelectedImage(null);
@@ -733,44 +711,35 @@ const deleteSelected = () => {
 
 
   return (
-  <div className="relative flex flex-col h-screen bg-gray-50">
-      <TopBar
-        undo={undo}
-        redo={redo}
-        exportAnnotations={exportAnnotations}
-        handleImageUpload={handleImageUpload}
-        deleteSelected={deleteSelected}
-
-      />
-
-      <div className="flex flex-1">
-        <Toolbox
-          drawingActive={drawingActive}
-          polygonActive={polygonActive}
-          scaleActive={scaleActive}
-          toggleDrawing={toggleDrawing}
-          togglePolygonDrawing={togglePolygonDrawing}
-          toggleScaleMode={toggleScaleMode}
-          selectedEntity={selectedEntity}
-          setSelectedEntity={setSelectedEntity}
+    <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
+      <main className="flex-1 flex flex-col order-1 md:order-2">
+        <TopBar
+          undo={undo}
+          redo={redo}
+          exportAnnotations={exportAnnotations}
+          handleImageUpload={handleImageUpload}
         />
-      <main className="flex-1 flex flex-col">
 
-
-        <div className="flex-1 p-2 md:p-6 flex items-center justify-center h-full">
-            <CanvasWithGrid ref={canvasRef} width="100%" height="100%" />
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
+          <CanvasWithGrid ref={canvasRef} width={1200} height={600}  gridSize={400}/>
         </div>
       </main>
 
-<LayerPanel
-          layerVisibility={layerVisibility}
-          toggleLayer={toggleLayer}
-        />
-      </div>
-     
-      
-      
-       <ScaleModal
+ <Toolbox
+        drawingActive={drawingActive}
+        polygonActive={polygonActive}
+        scaleActive={scaleActive}
+        toggleDrawing={toggleDrawing}
+        togglePolygonDrawing={togglePolygonDrawing}
+        toggleScaleMode={toggleScaleMode}
+        selectedEntity={selectedEntity}
+        setSelectedEntity={setSelectedEntity}
+      />
+
+      <LayerPanel
+        layerVisibility={layerVisibility}
+        toggleLayer={toggleLayer}
+      />      <ScaleModal
         isOpen={scaleModalOpen}
         onSubmit={(cm) => {
           if (pendingScaleLength) {
