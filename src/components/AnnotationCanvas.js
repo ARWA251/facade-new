@@ -32,6 +32,7 @@ const AnnotationCanvas = () => {
   const [scaleRatio, setScaleRatio] = useState(null);
   const [scaleModalOpen, setScaleModalOpen] = useState(false);
   const [pendingScaleLength, setPendingScaleLength] = useState(null);
+  const scaleSet = scaleRatio !== null;
   const currentPolygonPoints = useRef([]);
   const currentPolygonLines = useRef([]);
   const currentPolygonCircles = useRef([]);
@@ -714,6 +715,7 @@ ref.current = fabricImg;
     <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
       <main className="flex-1 flex flex-col order-1 md:order-2">
         <TopBar
+        scaleSet={scaleSet}
           undo={undo}
           redo={redo}
           exportAnnotations={exportAnnotations}
@@ -726,6 +728,7 @@ ref.current = fabricImg;
       </main>
 
  <Toolbox
+        scaleSet={scaleSet}
         drawingActive={drawingActive}
         polygonActive={polygonActive}
         scaleActive={scaleActive}
@@ -737,9 +740,11 @@ ref.current = fabricImg;
       />
 
       <LayerPanel
+        scaleSet={scaleSet}
         layerVisibility={layerVisibility}
         toggleLayer={toggleLayer}
-      />      <ScaleModal
+      />
+      <ScaleModal
         isOpen={scaleModalOpen}
         onSubmit={(cm) => {
           if (pendingScaleLength) {

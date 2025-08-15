@@ -10,11 +10,13 @@ const Toolbox = ({
   toggleScaleMode,
   selectedEntity,
   setSelectedEntity,
+  scaleSet,
 }) => {
   const [showPolygonDropdown, setShowPolygonDropdown] = useState(false);
   const [showRectangleDropdown, setShowRectangleDropdown] = useState(false);
 
   const handlePolygonClick = () => {
+    if (!scaleSet) return;
     if (polygonActive) {
       togglePolygonDrawing();
     } else {
@@ -23,6 +25,7 @@ const Toolbox = ({
   };
 
   const handleRectangleClick = () => {
+    if (!scaleSet) return;
     if (drawingActive) {
       toggleDrawing();
     } else {
@@ -50,11 +53,12 @@ const Toolbox = ({
           <div className="relative">
             <button
               onClick={handleRectangleClick}
+              disabled={!scaleSet}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
                 drawingActive
                   ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
                   : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
-              }`}
+              } ${!scaleSet ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Square className="w-4 h-4" />
               <span>Rectangle</span>
@@ -85,11 +89,12 @@ const Toolbox = ({
           <div className="relative">
             <button
               onClick={handlePolygonClick}
+              disabled={!scaleSet}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
                 polygonActive
                   ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
                   : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
-              }`}
+              } ${!scaleSet ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Shapes className="w-4 h-4" />
               <span>Polygon</span>
@@ -129,6 +134,11 @@ const Toolbox = ({
             <span>Échelle</span>
           </button>
         </div>
+        {!scaleSet && (
+          <p className="text-center text-xs text-gray-500 mt-2 px-2">
+            Cliquez sur <span className="font-medium">Échelle</span> pour activer les outils.
+          </p>
+        )}
       </div>
     </aside>
   );

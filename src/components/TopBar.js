@@ -7,6 +7,7 @@ const TopBar = ({
   exportAnnotations,
   handleImageUpload,
   deleteSelected,
+  scaleSet,
 }) => (
   <div className="relative w-full bg-gradient-to-r from-white via-gray-50 to-white border-b border-gray-200 shadow-sm">
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-6 py-5 gap-4">
@@ -65,7 +66,8 @@ const TopBar = ({
         {/* Save */}
         <button
           onClick={exportAnnotations}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-full font-semibold text-sm shadow-lg hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transition-all duration-200 ease-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          disabled={!scaleSet}
+          className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-full font-semibold text-sm shadow-lg hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transition-all duration-200 ease-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${!scaleSet ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <Save className="inline-block w-4 h-4 mr-2" />
           Sauvegarder
