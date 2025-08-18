@@ -32,7 +32,6 @@ const AnnotationCanvas = () => {
   const [scaleRatio, setScaleRatio] = useState(null);
   const [scaleModalOpen, setScaleModalOpen] = useState(false);
   const [pendingScaleLength, setPendingScaleLength] = useState(null);
-  const scaleSet = scaleRatio !== null;
   const currentPolygonPoints = useRef([]);
   const currentPolygonLines = useRef([]);
   const currentPolygonCircles = useRef([]);
@@ -157,6 +156,22 @@ const [layerVisibility, setLayerVisibility] = useState({
       annotationsHistory.current.push(annotation);
       canvas.renderAll();
     }
+  };
+
+  const deleteSelected = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const activeObjects = canvas.getActiveObjects();
+    if (!activeObjects.length) return;
+    activeObjects.forEach((obj) => {
+      canvas.remove(obj);
+      const index = annotationsHistory.current.indexOf(obj);
+      if (index !== -1) {
+        annotationsHistory.current.splice(index, 1);
+      }
+    });
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
   };
  // Allow keyboard shortcuts (Ctrl/Cmd + Z or Y) to trigger undo/redo
   useEffect(() => {
@@ -712,38 +727,33 @@ ref.current = fabricImg;
 
 
   return (
-    <div className="relative flex flex-col md:flex-row h-screen bg-gray-50">
-      <main className="flex-1 flex flex-col order-1 md:order-2">
-        <TopBar
-        scaleSet={scaleSet}
-          undo={undo}
-          redo={redo}
-          exportAnnotations={exportAnnotations}
-          handleImageUpload={handleImageUpload}
+    <div className="flex flex-col h-screen bg-gray-50">
+      <TopBar
+        undo={undo}
+        redo={redo}
+        exportAnnotations={exportAnnotations}
+        handleImageUpload={handleImageUpload}
+        deleteSelected={deleteSelected}
+      />
+      <div className="flex flex-1">
+        <Toolbox
+          drawingActive={drawingActive}
+          polygonActive={polygonActive}
+          scaleActive={scaleActive}
+          toggleDrawing={toggleDrawing}
+          togglePolygonDrawing={togglePolygonDrawing}
+          toggleScaleMode={toggleScaleMode}
+          selectedEntity={selectedEntity}
+          setSelectedEntity={setSelectedEntity}
         />
-
         <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
-          <CanvasWithGrid ref={canvasRef}  />
+          <CanvasWithGrid ref={canvasRef} />
         </div>
-      </main>
-
- <Toolbox
-        scaleSet={scaleSet}
-        drawingActive={drawingActive}
-        polygonActive={polygonActive}
-        scaleActive={scaleActive}
-        toggleDrawing={toggleDrawing}
-        togglePolygonDrawing={togglePolygonDrawing}
-        toggleScaleMode={toggleScaleMode}
-        selectedEntity={selectedEntity}
-        setSelectedEntity={setSelectedEntity}
-      />
-
-      <LayerPanel
-        scaleSet={scaleSet}
-        layerVisibility={layerVisibility}
-        toggleLayer={toggleLayer}
-      />
+        <LayerPanel
+          layerVisibility={layerVisibility}
+          toggleLayer={toggleLayer}
+        />
+      </div>
       <ScaleModal
         isOpen={scaleModalOpen}
         onSubmit={(cm) => {
