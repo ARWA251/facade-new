@@ -723,7 +723,7 @@ ref.current = fabricImg;
         />
 
         <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
-          <CanvasWithGrid ref={canvasRef} width={1200} height={600}  gridSize={400}/>
+          <CanvasWithGrid ref={canvasRef}  />
         </div>
       </main>
 
