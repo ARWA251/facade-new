@@ -1,7 +1,11 @@
 import React from 'react';
 
-const LayerPanel = ({ layerVisibility, toggleLayer }) => (
-  <aside className="w-64 bg-gradient-to-b from-white via-gray-50 to-white border-l border-gray-200 shadow-sm p-4">
+const LayerPanel = ({ layerVisibility, toggleLayer, disabled }) => (
+  <aside
+    className={`w-64 bg-gradient-to-b from-white via-gray-50 to-white border-l border-gray-200 shadow-sm p-4 ${
+      disabled ? 'opacity-50 pointer-events-none' : ''
+    }`}
+  >
     <div className="flex flex-col space-y-3 text-sm text-gray-700">
       <span className="font-semibold text-gray-800">Calques</span>
       {[
@@ -19,6 +23,7 @@ const LayerPanel = ({ layerVisibility, toggleLayer }) => (
             className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
             checked={layerVisibility[key]}
             onChange={() => toggleLayer(key)}
+            disabled={disabled}
           />
           <span>{label}</span>
         </label>

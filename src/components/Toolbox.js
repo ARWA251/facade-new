@@ -10,11 +10,13 @@ const Toolbox = ({
   toggleScaleMode,
   selectedEntity,
   setSelectedEntity,
+  disabled,
 }) => {
   const [showPolygonDropdown, setShowPolygonDropdown] = useState(false);
   const [showRectangleDropdown, setShowRectangleDropdown] = useState(false);
 
   const handlePolygonClick = () => {
+    if (disabled) return;
     if (polygonActive) {
       togglePolygonDrawing();
     } else {
@@ -23,6 +25,7 @@ const Toolbox = ({
   };
 
   const handleRectangleClick = () => {
+    if (disabled) return;
     if (drawingActive) {
       toggleDrawing();
     } else {
@@ -50,16 +53,19 @@ const Toolbox = ({
           <div className="relative">
             <button
               onClick={handleRectangleClick}
+              disabled={disabled}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-                drawingActive
-                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+                disabled
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : drawingActive
+                    ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
               }`}
             >
               <Square className="w-4 h-4" />
               <span>Rectangle</span>
             </button>
-            {showRectangleDropdown && !drawingActive && (
+            {showRectangleDropdown && !drawingActive && !disabled && (
               <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
@@ -85,16 +91,19 @@ const Toolbox = ({
           <div className="relative">
             <button
               onClick={handlePolygonClick}
+              disabled={disabled}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-                polygonActive
-                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+                disabled
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : polygonActive
+                    ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
               }`}
             >
               <Shapes className="w-4 h-4" />
               <span>Polygon</span>
             </button>
-            {showPolygonDropdown && !polygonActive && (
+            {showPolygonDropdown && !polygonActive && !disabled && (
               <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
