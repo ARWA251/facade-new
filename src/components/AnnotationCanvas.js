@@ -718,13 +718,13 @@ ref.current = fabricImg;
   // Ajoute l'image sélectionnée sans appliquer de crop
   const addImageDirectly = () => {
     if (!selectedImage) return;
-    
+
     addImageToCanvas(selectedImage, { layer: 'baseImage' });
 
     setCropMode(null);
     setSelectedImage(null);
   };
-
+  const toolsEnabled = scaleRatio !== null;
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -745,13 +745,20 @@ ref.current = fabricImg;
           toggleScaleMode={toggleScaleMode}
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
+          disabled={!toolsEnabled}
         />
-        <div className="flex-1 p-2 md:p-6 flex items-center justify-center">
+        <div className="flex-1 p-2 md:p-6 flex items-center justify-center relative">
           <CanvasWithGrid ref={canvasRef} />
+          {!toolsEnabled && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow">
+              Veuillez mettre à l'échelle l'image d'abord
+            </div>
+          )}
         </div>
         <LayerPanel
           layerVisibility={layerVisibility}
           toggleLayer={toggleLayer}
+          disabled={!toolsEnabled}
         />
       </div>
       <ScaleModal
