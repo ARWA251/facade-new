@@ -62,12 +62,10 @@ const AnnotationCanvas = () => {
   };
 
   const activateEntityLayer = (entity) => {
-    if (entity === 'fenetre' || entity === 'porte' || entity === 'facade') {
+    if (['fenetre', 'porte', 'facade'].includes(entity)) {
       setLayerVisibility((prev) => ({
         ...prev,
-        fenetre: entity === 'fenetre',
-        porte: entity === 'porte',
-        facade: entity === 'facade',
+        [entity]: true,
       }));
       setAnnotationPromptOpen(false);
     }
