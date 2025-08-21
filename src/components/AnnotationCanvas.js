@@ -53,10 +53,10 @@ const AnnotationCanvas = () => {
     baseImage: false,
     processedImage: true,
   });
-  const [annotationCounts, setAnnotationCounts] = useState({
-    fenetre: 0,
-    porte: 0,
-    facade: 0,
+  const [activatedLayers, setActivatedLayers] = useState({
+    fenetre: false,
+    porte: false,
+    facade: false,
   });
   const layerVisibilityRef = useRef(layerVisibility);
   const baseImageRef = useRef(null);
@@ -66,33 +66,21 @@ const AnnotationCanvas = () => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
   };
 
-  const incrementAnnotationCount = (type) => {
-    if (!['fenetre', 'porte', 'facade'].includes(type)) return;
-    setAnnotationCounts((prev) => ({ ...prev, [type]: prev[type] + 1 }));
-  };
-
-  const decrementAnnotationCount = (type) => {
-    if (!['fenetre', 'porte', 'facade'].includes(type)) return;
-    setAnnotationCounts((prev) => ({
-      ...prev,
-      [type]: Math.max(0, prev[type] - 1),
-    }));
-  };
-
   const activateEntityLayer = (entity) => {
     if (['fenetre', 'porte', 'facade'].includes(entity)) {
       setLayerVisibility((prev) => ({
         ...prev,
         [entity]: true,
       }));
+      setActivatedLayers((prev) => ({ ...prev, [entity]: true }));
       setAnnotationPromptOpen(false);
     }
   };
 
   const layerToggleDisabled = {
-    fenetre: annotationCounts.fenetre === 0,
-    porte: annotationCounts.porte === 0,
-    facade: annotationCounts.facade === 0,
+    fenetre: !activatedLayers.fenetre,
+    porte: !activatedLayers.porte,
+    facade: !activatedLayers.facade,
     processedImage: false,
   };
     useEffect(() => {
@@ -180,7 +168,6 @@ const AnnotationCanvas = () => {
       redoStack.current.push(annotation);
       canvas.remove(annotation);
       canvas.renderAll();
-      decrementAnnotationCount(annotation.dataType);
     }
   };
 
@@ -192,7 +179,6 @@ const AnnotationCanvas = () => {
       canvas.add(annotation);
       annotationsHistory.current.push(annotation);
       canvas.renderAll();
-      incrementAnnotationCount(annotation.dataType);
     }
   };
 
@@ -201,23 +187,12 @@ const AnnotationCanvas = () => {
     if (!canvas) return;
     const activeObjects = canvas.getActiveObjects();
     if (!activeObjects.length) return;
-    const removedCounts = {};
     activeObjects.forEach((obj) => {
       canvas.remove(obj);
       const index = annotationsHistory.current.indexOf(obj);
       if (index !== -1) {
         annotationsHistory.current.splice(index, 1);
       }
-      if (obj.dataType) {
-        removedCounts[obj.dataType] = (removedCounts[obj.dataType] || 0) + 1;
-      }
-    });
-    setAnnotationCounts((prev) => {
-      const updated = { ...prev };
-      Object.keys(removedCounts).forEach((type) => {
-        updated[type] = Math.max(0, updated[type] - removedCounts[type]);
-      });
-      return updated;
     });
     canvas.discardActiveObject();
     canvas.requestRenderAll();
@@ -295,6 +270,9 @@ const AnnotationCanvas = () => {
         return;
       }
       if (isPolygonMode.current) {
+        if (currentPolygonPoints.current.length === 0) {
+          activateEntityLayer(selectedEntityRef.current);
+        }
         const point = new Circle({
           left: pointer.x,
           top: pointer.y,
@@ -330,6 +308,7 @@ const AnnotationCanvas = () => {
       }
 
       if (isDrawingMode.current) {
+        activateEntityLayer(selectedEntityRef.current);
         const color = entityColors[selectedEntityRef.current] || entityColors['facade'];
 
         startX.current = pointer.x;
@@ -425,8 +404,6 @@ const AnnotationCanvas = () => {
         rectRef.current.setCoords();
         annotationsHistory.current.push(rectRef.current);
         redoStack.current = [];
-        activateEntityLayer(selectedEntityRef.current);
-        incrementAnnotationCount(selectedEntityRef.current);
       }
     });
 
@@ -459,8 +436,6 @@ const AnnotationCanvas = () => {
       canvas.add(polygon);
       annotationsHistory.current.push(polygon);
       redoStack.current = [];
-      activateEntityLayer(selectedEntityRef.current);
-      incrementAnnotationCount(selectedEntityRef.current);
       currentPolygonLines.current.forEach(line => canvas.remove(line));
       currentPolygonCircles.current.forEach(c => canvas.remove(c));
       if (previewLine.current) {
@@ -554,7 +529,7 @@ const toggleScaleMode = () => {
     canvas.renderAll();
     annotationsHistory.current = [];
     redoStack.current = [];
-    setAnnotationCounts({ fenetre: 0, porte: 0, facade: 0 });
+    setActivatedLayers({ fenetre: false, porte: false, facade: false });
   };
 
   const exportAnnotations = () => {
