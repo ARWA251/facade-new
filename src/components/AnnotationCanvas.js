@@ -7,6 +7,7 @@ import LayerPanel from './LayerPanel';
 import CropModal from './CropModal';
 import CanvasWithGrid from './CanvasWithGrid';
 import ScaleModal from './ScaleModal';
+import AnnotationPrompt from './AnnotationPrompt';
 
 const AnnotationCanvas = () => {
   const canvasRef = useRef(null);
@@ -32,6 +33,7 @@ const AnnotationCanvas = () => {
   const [scaleRatio, setScaleRatio] = useState(null);
   const [scaleModalOpen, setScaleModalOpen] = useState(false);
   const [pendingScaleLength, setPendingScaleLength] = useState(null);
+  const [annotationPromptOpen, setAnnotationPromptOpen] = useState(false);
   const currentPolygonPoints = useRef([]);
   const currentPolygonLines = useRef([]);
   const currentPolygonCircles = useRef([]);
@@ -44,12 +46,17 @@ const AnnotationCanvas = () => {
   const [drawingActive, setDrawingActive] = useState(false);
   const [polygonActive, setPolygonActive] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState('fenetre');
-const [layerVisibility, setLayerVisibility] = useState({
+  const [layerVisibility, setLayerVisibility] = useState({
     fenetre: true,
     porte: true,
     facade: true,
     baseImage: false,
     processedImage: true,
+  });
+  const [annotationCounts, setAnnotationCounts] = useState({
+    fenetre: 0,
+    porte: 0,
+    facade: 0,
   });
   const layerVisibilityRef = useRef(layerVisibility);
   const baseImageRef = useRef(null);
@@ -57,6 +64,36 @@ const [layerVisibility, setLayerVisibility] = useState({
 
   const toggleLayer = (layer) => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
+  };
+
+  const incrementAnnotationCount = (type) => {
+    if (!['fenetre', 'porte', 'facade'].includes(type)) return;
+    setAnnotationCounts((prev) => ({ ...prev, [type]: prev[type] + 1 }));
+  };
+
+  const decrementAnnotationCount = (type) => {
+    if (!['fenetre', 'porte', 'facade'].includes(type)) return;
+    setAnnotationCounts((prev) => ({
+      ...prev,
+      [type]: Math.max(0, prev[type] - 1),
+    }));
+  };
+
+  const activateEntityLayer = (entity) => {
+    if (['fenetre', 'porte', 'facade'].includes(entity)) {
+      setLayerVisibility((prev) => ({
+        ...prev,
+        [entity]: true,
+      }));
+      setAnnotationPromptOpen(false);
+    }
+  };
+
+  const layerToggleDisabled = {
+    fenetre: annotationCounts.fenetre === 0,
+    porte: annotationCounts.porte === 0,
+    facade: annotationCounts.facade === 0,
+    processedImage: false,
   };
     useEffect(() => {
     layerVisibilityRef.current = layerVisibility;
@@ -143,18 +180,19 @@ const [layerVisibility, setLayerVisibility] = useState({
       redoStack.current.push(annotation);
       canvas.remove(annotation);
       canvas.renderAll();
-      
+      decrementAnnotationCount(annotation.dataType);
     }
   };
 
   const redo = () => {
     const canvas = fabricRef.current;
     if (!canvas) return;
-      const annotation = redoStack.current.pop();
+    const annotation = redoStack.current.pop();
     if (annotation) {
       canvas.add(annotation);
       annotationsHistory.current.push(annotation);
       canvas.renderAll();
+      incrementAnnotationCount(annotation.dataType);
     }
   };
 
@@ -163,12 +201,23 @@ const [layerVisibility, setLayerVisibility] = useState({
     if (!canvas) return;
     const activeObjects = canvas.getActiveObjects();
     if (!activeObjects.length) return;
+    const removedCounts = {};
     activeObjects.forEach((obj) => {
       canvas.remove(obj);
       const index = annotationsHistory.current.indexOf(obj);
       if (index !== -1) {
         annotationsHistory.current.splice(index, 1);
       }
+      if (obj.dataType) {
+        removedCounts[obj.dataType] = (removedCounts[obj.dataType] || 0) + 1;
+      }
+    });
+    setAnnotationCounts((prev) => {
+      const updated = { ...prev };
+      Object.keys(removedCounts).forEach((type) => {
+        updated[type] = Math.max(0, updated[type] - removedCounts[type]);
+      });
+      return updated;
     });
     canvas.discardActiveObject();
     canvas.requestRenderAll();
@@ -376,6 +425,8 @@ const [layerVisibility, setLayerVisibility] = useState({
         rectRef.current.setCoords();
         annotationsHistory.current.push(rectRef.current);
         redoStack.current = [];
+        activateEntityLayer(selectedEntityRef.current);
+        incrementAnnotationCount(selectedEntityRef.current);
       }
     });
 
@@ -408,6 +459,8 @@ const [layerVisibility, setLayerVisibility] = useState({
       canvas.add(polygon);
       annotationsHistory.current.push(polygon);
       redoStack.current = [];
+      activateEntityLayer(selectedEntityRef.current);
+      incrementAnnotationCount(selectedEntityRef.current);
       currentPolygonLines.current.forEach(line => canvas.remove(line));
       currentPolygonCircles.current.forEach(c => canvas.remove(c));
       if (previewLine.current) {
@@ -501,6 +554,7 @@ const toggleScaleMode = () => {
     canvas.renderAll();
     annotationsHistory.current = [];
     redoStack.current = [];
+    setAnnotationCounts({ fenetre: 0, porte: 0, facade: 0 });
   };
 
   const exportAnnotations = () => {
@@ -759,6 +813,7 @@ ref.current = fabricImg;
           layerVisibility={layerVisibility}
           toggleLayer={toggleLayer}
           disabled={!toolsEnabled}
+          layerToggleDisabled={layerToggleDisabled}
         />
       </div>
       <ScaleModal
@@ -769,11 +824,16 @@ ref.current = fabricImg;
           }
           setScaleModalOpen(false);
           setPendingScaleLength(null);
+          setAnnotationPromptOpen(true);
         }}
         onCancel={() => {
           setScaleModalOpen(false);
           setPendingScaleLength(null);
         }}
+      />
+      <AnnotationPrompt
+        isOpen={annotationPromptOpen}
+        onClose={() => setAnnotationPromptOpen(false)}
       />
       <CropModal
         cropMode={cropMode}
