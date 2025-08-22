@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Ruler, Square, Shapes } from 'lucide-react';
+import { Ruler, Square, Shapes, RulerDimensionLine } from 'lucide-react';
 
 const Toolbox = ({
   drawingActive,
   polygonActive,
   scaleActive,
+  measureActive,
   toggleDrawing,
   togglePolygonDrawing,
   toggleScaleMode,
+  toggleMeasureMode,
   selectedEntity,
   setSelectedEntity,
   disabled,
@@ -126,21 +128,35 @@ const Toolbox = ({
               </div>
             )}
           </div>
-          <button
-            onClick={toggleScaleMode}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-              scaleActive
-                ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+            <button
+              onClick={toggleScaleMode}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+                scaleActive
+                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
               }`}
-          >
-            <Ruler className="w-4 h-4" />
-            <span>Échelle</span>
-          </button>
+            >
+              <Ruler className="w-4 h-4" />
+              <span>Échelle</span>
+            </button>
+            <button
+              onClick={toggleMeasureMode}
+              disabled={disabled}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+                disabled
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : measureActive
+                    ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+              }`}
+            >
+              <RulerDimensionLine className="w-4 h-4" />
+              <span>Mesure</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </aside>
-  );
-};
+      </aside>
+    );
+  };
 
-export default Toolbox;
+  export default Toolbox;
