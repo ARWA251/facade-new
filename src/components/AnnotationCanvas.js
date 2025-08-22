@@ -404,6 +404,8 @@ const AnnotationCanvas = () => {
         rectRef.current.setCoords();
         annotationsHistory.current.push(rectRef.current);
         redoStack.current = [];
+        // Keep rectangle drawing mode active for consecutive annotations
+        rectRef.current = null;
       }
     });
 
