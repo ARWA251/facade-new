@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage, Text } from 'fabric';
+import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage, Text, Group } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import LayerPanel from './LayerPanel';
@@ -414,6 +414,7 @@ const AnnotationCanvas = () => {
           const realLength = pixelLength * scaleRatio;
           const midX = (x1 + x2) / 2;
           const midY = (y1 + y2) / 2;
+          const angle = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
           const text = new Text(`${realLength.toFixed(2)} cm`, {
             left: midX,
             top: midY,
@@ -421,18 +422,24 @@ const AnnotationCanvas = () => {
             fill: '#0000FF',
             originX: 'center',
             originY: 'center',
+            backgroundColor: 'white',
             selectable: false,
             evented: false,
-            backgroundColor: 'white',
+            angle,
           });
-          canvas.add(text);
+          canvas.remove(measureLineRef.current);
+          const group = new Group([measureLineRef.current, text], {
+            selectable: true,
+            evented: true,
+          });
+          annotationsHistory.current.push(group);
+          redoStack.current = [];
+          canvas.add(group);
           canvas.renderAll();
-          setTimeout(() => {
-            canvas.remove(text);
-            canvas.renderAll();
-          }, 2000);
+        } else {
+          canvas.remove(measureLineRef.current);
+          canvas.renderAll();
         }
-        canvas.remove(measureLineRef.current);
         measureLineRef.current = null;
         isMeasureMode.current = false;
         setMeasureActive(false);
@@ -599,6 +606,13 @@ const toggleMeasureMode = () => {
         scaleLineRef.current = null;
       }
 
+      canvas.renderAll();
+    } else {
+      if (measureLineRef.current) {
+        canvas.remove(measureLineRef.current);
+        measureLineRef.current = null;
+        drawing.current = false;
+      }
       canvas.renderAll();
     }
   };
