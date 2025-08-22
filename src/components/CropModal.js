@@ -1,15 +1,10 @@
 import React from 'react';
-import ReactCrop from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import Cropper from 'react-document-crop';
 
 const CropModal = ({
   cropMode,
   selectedImage,
-  crop,
-  setCrop,
-  completedCrop,
-  setCompletedCrop,
-  imgRef,
+  cropperRef,
   handleCropValidate,
   addImageDirectly,
   onCancel
@@ -36,31 +31,7 @@ const CropModal = ({
 
         {/* Crop Area */}
         <div className="relative bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-inner mb-6 flex justify-center items-center">
-          <ReactCrop
-            crop={crop}
-            onChange={(_, percentCrop) => setCrop(percentCrop)}
-            onComplete={(c) => setCompletedCrop(c)}
-            aspect={undefined}
-            className="rounded-lg overflow-hidden"
-          >
-            <img
-              ref={imgRef}
-              src={selectedImage}
-              className="max-w-full max-h-[60vh] rounded-lg shadow-lg mx-auto"
-              onLoad={() => {
-                if (imgRef.current) {
-                  const { width, height } = imgRef.current;
-                  setCompletedCrop({
-                    unit: 'px',
-                    x: width * 0.25,
-                    y: height * 0.25,
-                    width: width * 0.5,
-                    height: height * 0.5
-                  });
-                }
-              }}
-            />
-          </ReactCrop>
+          <Cropper ref={cropperRef} src={selectedImage} />
         </div>
 
         {/* Action Buttons */}
@@ -99,7 +70,7 @@ const CropModal = ({
         {/* Helper Text */}
         <div className="mt-6 text-center">
           <p className="text-gray-500 text-sm">
-            Glissez pour sélectionner la zone à recadrer
+            Glissez les points pour ajuster le recadrage
           </p>
         </div>
       </div>
