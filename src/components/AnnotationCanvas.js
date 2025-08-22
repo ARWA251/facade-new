@@ -783,6 +783,10 @@ ref.current = fabricImg;
               Veuillez mettre à l'échelle l'image d'abord
             </div>
           )}
+          <AnnotationPrompt
+            isOpen={annotationPromptOpen}
+            onClose={() => setAnnotationPromptOpen(false)}
+          />
         </div>
         <LayerPanel
           layerVisibility={layerVisibility}
@@ -805,10 +809,6 @@ ref.current = fabricImg;
           setScaleModalOpen(false);
           setPendingScaleLength(null);
         }}
-      />
-      <AnnotationPrompt
-        isOpen={annotationPromptOpen}
-        onClose={() => setAnnotationPromptOpen(false)}
       />
       <CropModal
         cropMode={cropMode}
