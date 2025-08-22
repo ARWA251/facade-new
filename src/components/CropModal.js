@@ -1,5 +1,5 @@
 import React from 'react';
-import Cropper from 'react-perspective-cropper';
+import Cropper from 'react-document-crop';
 
 const CropModal = ({
   cropMode,
@@ -31,7 +31,7 @@ const CropModal = ({
 
         {/* Crop Area */}
         <div className="relative bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-inner mb-6 flex justify-center items-center">
-          <Cropper ref={cropperRef} image={selectedImage} />
+          <Cropper ref={cropperRef} src={selectedImage} />
         </div>
 
         {/* Action Buttons */}

@@ -3,7 +3,6 @@ import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabri
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import LayerPanel from './LayerPanel';
-
 import CropModal from './CropModal';
 import CanvasWithGrid from './CanvasWithGrid';
 import ScaleModal from './ScaleModal';
@@ -604,22 +603,19 @@ const toggleScaleMode = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Fonction de crop corrigée
- const handleCropValidate = async () => {
-  if (!cropperRef.current) return;
-
-  try {
-    const blob = await cropperRef.current.done();
-    if (!blob) return;
-    const croppedImageUrl = URL.createObjectURL(blob);
-    addImageToCanvas(croppedImageUrl, { layer: 'processedImage', revokeUrl: true });
-
-    setCropMode(null);
-    setSelectedImage(null);
-  } catch (e) {
-    console.error('Crop failed:', e);
-  }
-};
+  const handleCropValidate = async () => {
+    if (!cropperRef.current) return;
+    try {
+      const blob = await cropperRef.current.done();
+      if (!blob) return;
+      const croppedImageUrl = URL.createObjectURL(blob);
+      addImageToCanvas(croppedImageUrl, { layer: 'processedImage', revokeUrl: true });
+      setCropMode(null);
+      setSelectedImage(null);
+    } catch (e) {
+      console.error('Crop failed:', e);
+    }
+  };
 
 
   const handleImageUpload = (e) => {
