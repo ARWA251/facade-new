@@ -17,8 +17,11 @@ const Toolbox = ({
 
   const handlePolygonClick = () => {
     if (disabled) return;
+    // Close the rectangle dropdown if it's open
+    setShowRectangleDropdown(false);
     if (polygonActive) {
       togglePolygonDrawing();
+      setShowPolygonDropdown(true);
     } else {
       setShowPolygonDropdown((prev) => !prev);
     }
@@ -26,8 +29,11 @@ const Toolbox = ({
 
   const handleRectangleClick = () => {
     if (disabled) return;
+    // Close the polygon dropdown if it's open
+    setShowPolygonDropdown(false);
     if (drawingActive) {
       toggleDrawing();
+      setShowRectangleDropdown(true);
     } else {
       setShowRectangleDropdown((prev) => !prev);
     }
@@ -66,7 +72,7 @@ const Toolbox = ({
               <span>Rectangle</span>
             </button>
             {showRectangleDropdown && !drawingActive && !disabled && (
-              <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
+              <div className="absolute top-0 left-full ml-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startRectangleWithType('fenetre')}
@@ -104,7 +110,7 @@ const Toolbox = ({
               <span>Polygon</span>
             </button>
             {showPolygonDropdown && !polygonActive && !disabled && (
-              <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
+              <div className="absolute top-0 left-full ml-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startPolygonWithType('fenetre')}
