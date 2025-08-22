@@ -404,6 +404,9 @@ const AnnotationCanvas = () => {
         rectRef.current.setCoords();
         annotationsHistory.current.push(rectRef.current);
         redoStack.current = [];
+        // Automatically exit rectangle drawing mode after completing a shape
+        isDrawingMode.current = false;
+        setDrawingActive(false);
       }
     });
 
