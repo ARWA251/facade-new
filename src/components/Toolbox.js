@@ -31,12 +31,7 @@ const Toolbox = ({
     if (disabled) return;
     // Close the polygon dropdown if it's open
     setShowPolygonDropdown(false);
-    if (drawingActive) {
-      toggleDrawing();
-      setShowRectangleDropdown(true);
-    } else {
-      setShowRectangleDropdown((prev) => !prev);
-    }
+    setShowRectangleDropdown((prev) => !prev);
   };
 
   const startPolygonWithType = (type) => {
@@ -48,7 +43,9 @@ const Toolbox = ({
   const startRectangleWithType = (type) => {
     setSelectedEntity(type);
     setShowRectangleDropdown(false);
-    toggleDrawing();
+    if (!drawingActive) {
+      toggleDrawing();
+    }
   };
 
   return (
@@ -71,7 +68,7 @@ const Toolbox = ({
               <Square className="w-4 h-4" />
               <span>Rectangle</span>
             </button>
-            {showRectangleDropdown && !drawingActive && !disabled && (
+            {showRectangleDropdown && !disabled && (
               <div className="absolute top-0 left-full ml-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
