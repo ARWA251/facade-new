@@ -77,6 +77,29 @@ const AnnotationCanvas = () => {
     }
   };
 
+  const updateLayerActivation = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const counts = { fenetre: 0, porte: 0, facade: 0 };
+    canvas.getObjects().forEach((obj) => {
+      const type = obj.dataType;
+      if (counts.hasOwnProperty(type)) {
+        counts[type] += 1;
+      }
+    });
+    setActivatedLayers({
+      fenetre: counts.fenetre > 0,
+      porte: counts.porte > 0,
+      facade: counts.facade > 0,
+    });
+    setLayerVisibility((prev) => ({
+      ...prev,
+      fenetre: counts.fenetre > 0 ? prev.fenetre : false,
+      porte: counts.porte > 0 ? prev.porte : false,
+      facade: counts.facade > 0 ? prev.facade : false,
+    }));
+  };
+
   const layerToggleDisabled = {
     fenetre: !activatedLayers.fenetre,
     porte: !activatedLayers.porte,
@@ -168,6 +191,7 @@ const AnnotationCanvas = () => {
       redoStack.current.push(annotation);
       canvas.remove(annotation);
       canvas.renderAll();
+      updateLayerActivation();
     }
   };
 
@@ -179,6 +203,7 @@ const AnnotationCanvas = () => {
       canvas.add(annotation);
       annotationsHistory.current.push(annotation);
       canvas.renderAll();
+      updateLayerActivation();
     }
   };
 
@@ -196,6 +221,7 @@ const AnnotationCanvas = () => {
     });
     canvas.discardActiveObject();
     canvas.requestRenderAll();
+    updateLayerActivation();
   };
  // Allow keyboard shortcuts (Ctrl/Cmd + Z or Y) to trigger undo/redo
   useEffect(() => {
