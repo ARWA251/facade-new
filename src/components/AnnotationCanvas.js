@@ -638,8 +638,18 @@ const toggleScaleMode = () => {
     completedCrop.width,
     completedCrop.height
   );
+  // Aplatit l'image croppée sur un nouveau canvas pour éliminer toute transparence
+  const flattenCanvas = document.createElement('canvas');
+  flattenCanvas.width = canvas.width;
+  flattenCanvas.height = canvas.height;
+  const flattenCtx = flattenCanvas.getContext('2d');
+  flattenCtx.fillStyle = '#fff';
+  flattenCtx.fillRect(0, 0, flattenCanvas.width, flattenCanvas.height);
+  // Applique un filtre de type CamScanner pour améliorer le contraste et la luminosité
+  flattenCtx.filter = 'grayscale(100%) contrast(125%) brightness(115%)';
+  flattenCtx.drawImage(canvas, 0, 0);
 
-  canvas.toBlob((blob) => {
+  flattenCanvas.toBlob((blob) => {
     if (!blob) return;
 
     const croppedImageUrl = URL.createObjectURL(blob);
