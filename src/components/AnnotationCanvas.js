@@ -536,16 +536,16 @@ const toggleScaleMode = () => {
     const canvas = fabricRef.current;
     const features = [];
 
-    const baseImage = baseImageRef.current;
-    if (!canvas || !baseImage) return;
+    const referenceImage = baseImageRef.current || processedImageRef.current;
+    if (!canvas || !referenceImage) return;
 
-    const imgWidth = baseImage.width * baseImage.scaleX;
-    const imgHeight = baseImage.height * baseImage.scaleY;
-    const imgLeft = baseImage.left;
-    const imgTop = baseImage.top;
+    const imgWidth = referenceImage.width * referenceImage.scaleX;
+    const imgHeight = referenceImage.height * referenceImage.scaleY;
+    const imgLeft = referenceImage.left;
+    const imgTop = referenceImage.top;
 
     canvas.getObjects().forEach(obj => {
-      if (obj === baseImage || obj === processedImageRef.current) return;
+      if (obj === baseImageRef.current || obj === processedImageRef.current) return;
 
       let polygon = [];
       let metrics = null;
