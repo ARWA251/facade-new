@@ -563,7 +563,12 @@ const toggleScaleMode = () => {
           };
         }
       } else if (obj.type === 'polygon') {
-        const pixelPoints = obj.points.map(p => ({ x: p.x + obj.left, y: p.y + obj.top }));
+        const scaleX = obj.scaleX ?? 1;
+        const scaleY = obj.scaleY ?? 1;
+        const pixelPoints = obj.points.map(p => ({
+          x: obj.left + p.x * scaleX,
+          y: obj.top + p.y * scaleY,
+        }));
         polygon = pixelPoints.map(p => pixelToGeo(p.x, p.y, imgWidth, imgHeight));
         polygon.push(polygon[0]);
         if (scaleRatio) {
@@ -608,7 +613,9 @@ const toggleScaleMode = () => {
     const a = document.createElement('a');
     a.href = url;
     a.download = "annotations.geojson";
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
