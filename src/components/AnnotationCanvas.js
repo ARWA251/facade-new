@@ -657,6 +657,20 @@ const toggleScaleMode = () => {
 
   const handleImageUpload = (e) => {
     const canvas = fabricRef.current;
+
+    // Remove any existing images so the new one replaces them
+    if (canvas) {
+      if (baseImageRef.current) {
+        canvas.remove(baseImageRef.current);
+        baseImageRef.current = null;
+      }
+      if (processedImageRef.current) {
+        canvas.remove(processedImageRef.current);
+        processedImageRef.current = null;
+      }
+      canvas.requestRenderAll();
+    }
+
     const file = e.target.files[0];
 
     if (!file) return;
@@ -667,9 +681,8 @@ const toggleScaleMode = () => {
       setSelectedImage(imageUrl);
       addImageToCanvas(imageUrl, { layer: 'baseImage' });
 
-
       setCropMode('cropImage');
-      
+
       // Réinitialiser le crop
       setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
       setCompletedCrop(null);
