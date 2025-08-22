@@ -686,12 +686,13 @@ const toggleScaleMode = () => {
 
     const canvas = fabricRef.current;
     const htmlImg = new window.Image();
-// // Remove any previously added images so the new one replaces it
-//     canvas.getObjects('image').forEach((img) => canvas.remove(img));
-//     canvas.requestRenderAll();
     const ref = layer === 'baseImage' ? baseImageRef : processedImageRef;
     if (ref.current) {
       canvas.remove(ref.current);
+    }
+    if (layer === 'baseImage' && processedImageRef.current) {
+      canvas.remove(processedImageRef.current);
+      processedImageRef.current = null;
     }
     htmlImg.onload = function () {
       // Flatten the image onto an offscreen canvas to remove any transparency or orientation data
@@ -724,14 +725,13 @@ const toggleScaleMode = () => {
         visible: layerVisibilityRef.current[layer],
 
       });
-ref.current = fabricImg;
-      canvas.add(fabricImg);
-//hna
+
       if (layer === 'baseImage') {
-        canvas.insertAt(0, fabricImg);
+        canvas.insertAt(fabricImg, 0);
       } else {
         canvas.add(fabricImg);
       }
+      ref.current = fabricImg;
       canvas.requestRenderAll();
 
       if (revokeUrl) {
