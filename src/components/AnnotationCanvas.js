@@ -645,6 +645,8 @@ const toggleScaleMode = () => {
   const flattenCtx = flattenCanvas.getContext('2d');
   flattenCtx.fillStyle = '#fff';
   flattenCtx.fillRect(0, 0, flattenCanvas.width, flattenCanvas.height);
+  // Applique un filtre de type CamScanner pour améliorer le contraste et la luminosité
+  flattenCtx.filter = 'grayscale(100%) contrast(125%) brightness(115%)';
   flattenCtx.drawImage(canvas, 0, 0);
 
   flattenCanvas.toBlob((blob) => {
