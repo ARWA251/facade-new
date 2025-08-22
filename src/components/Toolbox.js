@@ -21,6 +21,7 @@ const Toolbox = ({
     setShowRectangleDropdown(false);
     if (polygonActive) {
       togglePolygonDrawing();
+      setShowPolygonDropdown(true);
     } else {
       setShowPolygonDropdown((prev) => !prev);
     }
@@ -32,6 +33,7 @@ const Toolbox = ({
     setShowPolygonDropdown(false);
     if (drawingActive) {
       toggleDrawing();
+      setShowRectangleDropdown(true);
     } else {
       setShowRectangleDropdown((prev) => !prev);
     }
