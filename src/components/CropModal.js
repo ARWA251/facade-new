@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -14,6 +14,18 @@ const CropModal = ({
   addImageDirectly,
   onCancel
 }) => {
+  const [imgMaxHeight, setImgMaxHeight] = useState('60vh');
+
+  useEffect(() => {
+    const updateMaxHeight = () => {
+      const offset = 240; // reserve space for header and buttons
+      setImgMaxHeight(`${window.innerHeight - offset}px`);
+    };
+    updateMaxHeight();
+    window.addEventListener('resize', updateMaxHeight);
+    return () => window.removeEventListener('resize', updateMaxHeight);
+  }, []);
+
   if (cropMode !== 'cropImage' || !selectedImage) return null;
 
   return (
@@ -46,7 +58,8 @@ const CropModal = ({
             <img
               ref={imgRef}
               src={selectedImage}
-              className="max-w-full max-h-[60vh] rounded-lg shadow-lg mx-auto"
+              className="max-w-full rounded-lg shadow-lg mx-auto"
+              style={{ maxHeight: imgMaxHeight }}
               onLoad={() => {
                 if (imgRef.current) {
                   const { width, height } = imgRef.current;
