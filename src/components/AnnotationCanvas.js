@@ -535,17 +535,23 @@ const toggleScaleMode = () => {
   const exportAnnotations = () => {
     const canvas = fabricRef.current;
     const features = [];
-    const imgWidth = canvas.getWidth();
-    const imgHeight = canvas.getHeight();
+
+    const referenceImage = baseImageRef.current || processedImageRef.current;
+    if (!canvas || !referenceImage) return;
+
+    const imgWidth = referenceImage.width * referenceImage.scaleX;
+    const imgHeight = referenceImage.height * referenceImage.scaleY;
+    const imgLeft = referenceImage.left;
+    const imgTop = referenceImage.top;
 
     canvas.getObjects().forEach(obj => {
-      if (obj === canvas.backgroundImage) return;
+      if (obj === baseImageRef.current || obj === processedImageRef.current) return;
 
       let polygon = [];
       let metrics = null;
       if (obj.type === 'rect') {
-        const left = obj.left;
-        const top = obj.top;
+        const left = obj.left - imgLeft;
+        const top = obj.top - imgTop;
         const width = obj.width * obj.scaleX;
         const height = obj.height * obj.scaleY;
         polygon = [
@@ -563,7 +569,10 @@ const toggleScaleMode = () => {
           };
         }
       } else if (obj.type === 'polygon') {
-        const pixelPoints = obj.points.map(p => ({ x: p.x + obj.left, y: p.y + obj.top }));
+        const pixelPoints = obj.points.map(p => ({
+          x: p.x * obj.scaleX + obj.left - imgLeft,
+          y: p.y * obj.scaleY + obj.top - imgTop
+        }));
         polygon = pixelPoints.map(p => pixelToGeo(p.x, p.y, imgWidth, imgHeight));
         polygon.push(polygon[0]);
         if (scaleRatio) {
@@ -592,7 +601,7 @@ const toggleScaleMode = () => {
           type: "Polygon",
           coordinates: [polygon]
         }
-        
+
       });
     });
 
