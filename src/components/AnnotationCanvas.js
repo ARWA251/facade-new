@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
+import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage, Text } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import LayerPanel from './LayerPanel';
@@ -27,12 +27,15 @@ const AnnotationCanvas = () => {
 
   const isDrawingMode = useRef(false);
   const isPolygonMode = useRef(false);
-  const isScaleMode = useRef(false);
-  const scaleLineRef = useRef(null);
-  const [scaleActive, setScaleActive] = useState(false);
-  const [scaleRatio, setScaleRatio] = useState(null);
-  const [scaleModalOpen, setScaleModalOpen] = useState(false);
-  const [pendingScaleLength, setPendingScaleLength] = useState(null);
+    const isScaleMode = useRef(false);
+    const scaleLineRef = useRef(null);
+    const isMeasureMode = useRef(false);
+    const measureLineRef = useRef(null);
+    const [scaleActive, setScaleActive] = useState(false);
+    const [measureActive, setMeasureActive] = useState(false);
+    const [scaleRatio, setScaleRatio] = useState(null);
+    const [scaleModalOpen, setScaleModalOpen] = useState(false);
+    const [pendingScaleLength, setPendingScaleLength] = useState(null);
   const [annotationPromptOpen, setAnnotationPromptOpen] = useState(false);
   const currentPolygonPoints = useRef([]);
   const currentPolygonLines = useRef([]);
@@ -269,6 +272,21 @@ const AnnotationCanvas = () => {
         canvas.renderAll();
         return;
       }
+      if (isMeasureMode.current) {
+        startX.current = pointer.x;
+        startY.current = pointer.y;
+        drawing.current = true;
+        const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+          stroke: '#0000FF',
+          strokeWidth: 2,
+          selectable: false,
+          evented: false,
+        });
+        measureLineRef.current = line;
+        canvas.add(line);
+        canvas.renderAll();
+        return;
+      }
       if (isPolygonMode.current) {
         if (currentPolygonPoints.current.length === 0) {
           activateEntityLayer(selectedEntityRef.current);
@@ -347,6 +365,11 @@ const AnnotationCanvas = () => {
         canvas.renderAll();
         return;
       }
+      if (isMeasureMode.current && drawing.current && measureLineRef.current) {
+        measureLineRef.current.set({ x2: pointer.x, y2: pointer.y });
+        canvas.renderAll();
+        return;
+      }
       if (isPolygonMode.current && currentPolygonPoints.current.length > 0) {
         const [lastX, lastY] = currentPolygonPoints.current.at(-1);
 
@@ -384,6 +407,38 @@ const AnnotationCanvas = () => {
 
     canvas.on('mouse:up', function () {
 
+      if (isMeasureMode.current && measureLineRef.current) {
+        const { x1, y1, x2, y2 } = measureLineRef.current;
+        const pixelLength = Math.hypot(x2 - x1, y2 - y1);
+        if (pixelLength > 0 && scaleRatio) {
+          const realLength = pixelLength * scaleRatio;
+          const midX = (x1 + x2) / 2;
+          const midY = (y1 + y2) / 2;
+          const text = new Text(`${realLength.toFixed(2)} cm`, {
+            left: midX,
+            top: midY,
+            fontSize: 14,
+            fill: '#0000FF',
+            originX: 'center',
+            originY: 'center',
+            selectable: false,
+            evented: false,
+            backgroundColor: 'white',
+          });
+          canvas.add(text);
+          canvas.renderAll();
+          setTimeout(() => {
+            canvas.remove(text);
+            canvas.renderAll();
+          }, 2000);
+        }
+        canvas.remove(measureLineRef.current);
+        measureLineRef.current = null;
+        isMeasureMode.current = false;
+        setMeasureActive(false);
+        drawing.current = false;
+        return;
+      }
       if (isScaleMode.current && scaleLineRef.current) {
         const { x1, y1, x2, y2 } = scaleLineRef.current;
         const pixelLength = Math.hypot(x2 - x1, y2 - y1);
@@ -512,6 +567,36 @@ const toggleScaleMode = () => {
       if (previewLine.current) {
         canvas.remove(previewLine.current);
         previewLine.current = null;
+      }
+
+      canvas.renderAll();
+    }
+  };
+const toggleMeasureMode = () => {
+    const canvas = fabricRef.current;
+    isMeasureMode.current = !isMeasureMode.current;
+    setMeasureActive(isMeasureMode.current);
+
+    if (isMeasureMode.current) {
+      isDrawingMode.current = false;
+      isPolygonMode.current = false;
+      isScaleMode.current = false;
+      setDrawingActive(false);
+      setPolygonActive(false);
+      setScaleActive(false);
+
+      currentPolygonPoints.current = [];
+      currentPolygonLines.current.forEach(line => canvas.remove(line));
+      currentPolygonLines.current = [];
+
+      if (previewLine.current) {
+        canvas.remove(previewLine.current);
+        previewLine.current = null;
+      }
+
+      if (scaleLineRef.current) {
+        canvas.remove(scaleLineRef.current);
+        scaleLineRef.current = null;
       }
 
       canvas.renderAll();
@@ -769,9 +854,11 @@ ref.current = fabricImg;
           drawingActive={drawingActive}
           polygonActive={polygonActive}
           scaleActive={scaleActive}
+          measureActive={measureActive}
           toggleDrawing={toggleDrawing}
           togglePolygonDrawing={togglePolygonDrawing}
           toggleScaleMode={toggleScaleMode}
+          toggleMeasureMode={toggleMeasureMode}
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
           disabled={!toolsEnabled}
