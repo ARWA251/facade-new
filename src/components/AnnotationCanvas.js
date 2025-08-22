@@ -693,6 +693,10 @@ const toggleScaleMode = () => {
     if (ref.current) {
       canvas.remove(ref.current);
     }
+    if (layer === 'baseImage' && processedImageRef.current) {
+      canvas.remove(processedImageRef.current);
+      processedImageRef.current = null;
+    }
     htmlImg.onload = function () {
       // Flatten the image onto an offscreen canvas to remove any transparency or orientation data
       const flattenCanvas = document.createElement('canvas');
