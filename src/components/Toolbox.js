@@ -10,24 +10,28 @@ const Toolbox = ({
   toggleScaleMode,
   selectedEntity,
   setSelectedEntity,
+  disabled,
 }) => {
   const [showPolygonDropdown, setShowPolygonDropdown] = useState(false);
   const [showRectangleDropdown, setShowRectangleDropdown] = useState(false);
 
   const handlePolygonClick = () => {
+    if (disabled) return;
+    // Close the rectangle dropdown if it's open
+    setShowRectangleDropdown(false);
     if (polygonActive) {
       togglePolygonDrawing();
+      setShowPolygonDropdown(true);
     } else {
       setShowPolygonDropdown((prev) => !prev);
     }
   };
 
   const handleRectangleClick = () => {
-    if (drawingActive) {
-      toggleDrawing();
-    } else {
-      setShowRectangleDropdown((prev) => !prev);
-    }
+    if (disabled) return;
+    // Close the polygon dropdown if it's open
+    setShowPolygonDropdown(false);
+    setShowRectangleDropdown((prev) => !prev);
   };
 
   const startPolygonWithType = (type) => {
@@ -39,7 +43,9 @@ const Toolbox = ({
   const startRectangleWithType = (type) => {
     setSelectedEntity(type);
     setShowRectangleDropdown(false);
-    toggleDrawing();
+    if (!drawingActive) {
+      toggleDrawing();
+    }
   };
 
   return (
@@ -50,17 +56,20 @@ const Toolbox = ({
           <div className="relative">
             <button
               onClick={handleRectangleClick}
+              disabled={disabled}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-                drawingActive
-                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+                disabled
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : drawingActive
+                    ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
               }`}
             >
               <Square className="w-4 h-4" />
               <span>Rectangle</span>
             </button>
-            {showRectangleDropdown && !drawingActive && (
-              <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
+            {showRectangleDropdown && !disabled && (
+              <div className="absolute top-0 left-full ml-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startRectangleWithType('fenetre')}
@@ -85,17 +94,20 @@ const Toolbox = ({
           <div className="relative">
             <button
               onClick={handlePolygonClick}
+              disabled={disabled}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
-                polygonActive
-                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+                disabled
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : polygonActive
+                    ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
               }`}
             >
               <Shapes className="w-4 h-4" />
               <span>Polygon</span>
             </button>
-            {showPolygonDropdown && !polygonActive && (
-              <div className="absolute left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
+            {showPolygonDropdown && !polygonActive && !disabled && (
+              <div className="absolute top-0 left-full ml-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
                 <button
                   className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => startPolygonWithType('fenetre')}
@@ -123,7 +135,7 @@ const Toolbox = ({
               scaleActive
                 ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
                 : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
-            }`}
+              }`}
           >
             <Ruler className="w-4 h-4" />
             <span>Échelle</span>
