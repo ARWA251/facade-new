@@ -13,17 +13,7 @@ const AnnotationCanvas = () => {
   const canvasRef = useRef(null);
   const fabricRef = useRef(null);
   const [cropMode, setCropMode] = useState(null);
-  const cropShapeRef = useRef(null);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [crop, setCrop] = useState({
-    unit: '%',
-    x: 25,
-    y: 25,
-    width: 50,
-    height: 50
-  });
-  const [completedCrop, setCompletedCrop] = useState(null);
-  const imgRef = useRef(null);
 
   const isDrawingMode = useRef(false);
   const isPolygonMode = useRef(false);
@@ -97,10 +87,6 @@ const AnnotationCanvas = () => {
   }, [layerVisibility]);
   const annotationsHistory = useRef([]);
   const redoStack = useRef([]);
-  const cropPoints = useRef([]);
-  const cropLines = useRef([]);
-  const cropCircles = useRef([]);
-  const cropPreviewLine = useRef(null);
 
   const entityColors = {
     fenetre: { 
@@ -217,30 +203,6 @@ const AnnotationCanvas = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-  const cleanupCropMode = () => {
-    const canvas = fabricRef.current;
-    
-    if (cropShapeRef.current) {
-      canvas.remove(cropShapeRef.current);
-      cropShapeRef.current = null;
-    }
-    
-    cropLines.current.forEach(line => canvas.remove(line));
-    cropCircles.current.forEach(circle => canvas.remove(circle));
-    
-    if (cropPreviewLine.current) {
-      canvas.remove(cropPreviewLine.current);
-      cropPreviewLine.current = null;
-    }
-    
-    cropPoints.current = [];
-    cropLines.current = [];
-    cropCircles.current = [];
-    
-    setCropMode(null);
-    canvas.renderAll();
-  };
-
   // Canvas initialisé une seule fois
   useEffect(() => {
     const canvas = new Canvas(canvasRef.current, {
@@ -614,67 +576,25 @@ const toggleScaleMode = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Fonction de crop corrigée
- const handleCropValidate = () => {
-  if (!completedCrop?.width || !completedCrop?.height || !imgRef.current) {
-    console.log('Crop invalide:', { completedCrop, imgRef: imgRef.current });
-    return;
-  }
-
-  const canvas = document.createElement('canvas');
-  const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-  const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-
-  canvas.width = completedCrop.width;
-  canvas.height = completedCrop.height;
-  const ctx = canvas.getContext('2d');
-
-  ctx.drawImage(
-    imgRef.current,
-    completedCrop.x * scaleX,
-    completedCrop.y * scaleY,
-    completedCrop.width * scaleX,
-    completedCrop.height * scaleY,
-    0,
-    0,
-    completedCrop.width,
-    completedCrop.height
-  );
-
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-
-    const croppedImageUrl = URL.createObjectURL(blob);
-    addImageToCanvas(croppedImageUrl, { layer: 'processedImage', revokeUrl: true });
-
-
-    // Réinitialisation
+  const handleCropResult = (croppedUrl) => {
+    addImageToCanvas(croppedUrl, { layer: 'processedImage', revokeUrl: true });
     setCropMode(null);
     setSelectedImage(null);
-    setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
-    setCompletedCrop(null);
-  }, 'image/png');
-};
+  };
 
 
   const handleImageUpload = (e) => {
-    const canvas = fabricRef.current;
     const file = e.target.files[0];
 
     if (!file) return;
 
+    setSelectedImage(file);
+
     const reader = new FileReader();
     reader.onload = function (event) {
       const imageUrl = event.target.result;
-      setSelectedImage(imageUrl);
       addImageToCanvas(imageUrl, { layer: 'baseImage' });
-
-
       setCropMode('cropImage');
-      
-      // Réinitialiser le crop
-      setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
-      setCompletedCrop(null);
     };
     reader.readAsDataURL(file);
     //Reset the file input after each upload so that selecting the same image again reopens the cropping workflow
@@ -748,10 +668,6 @@ ref.current = fabricImg;
 
   // Ajoute l'image sélectionnée sans appliquer de crop
   const addImageDirectly = () => {
-    if (!selectedImage) return;
-
-    addImageToCanvas(selectedImage, { layer: 'baseImage' });
-
     setCropMode(null);
     setSelectedImage(null);
   };
@@ -815,18 +731,11 @@ ref.current = fabricImg;
       <CropModal
         cropMode={cropMode}
         selectedImage={selectedImage}
-        crop={crop}
-        setCrop={setCrop}
-        completedCrop={completedCrop}
-        setCompletedCrop={setCompletedCrop}
-        imgRef={imgRef}
-        handleCropValidate={handleCropValidate}
+        onCrop={handleCropResult}
         addImageDirectly={addImageDirectly}
         onCancel={() => {
           setCropMode(null);
           setSelectedImage(null);
-          setCrop({ unit: '%', x: 25, y: 25, width: 50, height: 50 });
-          setCompletedCrop(null);
         }}
       />
     </div>
