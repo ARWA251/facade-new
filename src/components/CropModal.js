@@ -1,20 +1,30 @@
-import React from 'react';
-import ReactCrop from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import React, { useRef } from 'react';
+import Cropper from 'react-perspective-cropper';
 
 const CropModal = ({
   cropMode,
   selectedImage,
-  crop,
-  setCrop,
-  completedCrop,
-  setCompletedCrop,
-  imgRef,
-  handleCropValidate,
+  onCrop,
   addImageDirectly,
   onCancel
 }) => {
+  const cropperRef = useRef(null);
+
   if (cropMode !== 'cropImage' || !selectedImage) return null;
+
+  const handleValidate = async () => {
+    if (!cropperRef.current) return;
+    try {
+      const blob = await cropperRef.current.done({ preview: false });
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        onCrop(url);
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Crop error', e);
+    }
+  };
 
   return (
     <div className="absolute inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex justify-center items-center z-50 p-4">
@@ -36,37 +46,20 @@ const CropModal = ({
 
         {/* Crop Area */}
         <div className="relative bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-inner mb-6 flex justify-center items-center">
-          <ReactCrop
-            crop={crop}
-            onChange={(_, percentCrop) => setCrop(percentCrop)}
-            onComplete={(c) => setCompletedCrop(c)}
-            aspect={undefined}
-            className="rounded-lg overflow-hidden"
-          >
-            <img
-              ref={imgRef}
-              src={selectedImage}
-              className="max-w-full max-h-[60vh] rounded-lg shadow-lg mx-auto"
-              onLoad={() => {
-                if (imgRef.current) {
-                  const { width, height } = imgRef.current;
-                  setCompletedCrop({
-                    unit: 'px',
-                    x: width * 0.25,
-                    y: height * 0.25,
-                    width: width * 0.5,
-                    height: height * 0.5
-                  });
-                }
-              }}
-            />
-          </ReactCrop>
+          <Cropper
+            ref={cropperRef}
+            image={selectedImage}
+            onChange={() => {}}
+            onDragStop={() => {}}
+            openCvPath="https://docs.opencv.org/3.4.13/opencv.js"
+            className="max-w-full max-h-[60vh]"
+          />
         </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={handleCropValidate}
+            onClick={handleValidate}
             className="group px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full font-semibold shadow-lg hover:from-green-600 hover:to-green-700 hover:shadow-xl transition-all duration-200 ease-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
             <span className="flex items-center space-x-2">
@@ -99,7 +92,7 @@ const CropModal = ({
         {/* Helper Text */}
         <div className="mt-6 text-center">
           <p className="text-gray-500 text-sm">
-            Glissez pour sélectionner la zone à recadrer
+            Déplacez les coins pour ajuster le recadrage
           </p>
         </div>
       </div>
@@ -108,3 +101,4 @@ const CropModal = ({
 };
 
 export default CropModal;
+

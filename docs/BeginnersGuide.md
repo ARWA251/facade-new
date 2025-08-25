@@ -6,7 +6,7 @@ simplifier le développement :
 
 - **React 19** pour construire l'interface utilisateur.
 - **Fabric.js** pour le dessin sur un `<canvas>` HTML.
-- **react-image-crop** pour recadrer les images avant l'annotation.
+- **react-perspective-cropper** pour recadrer les images avec ajustement des quatre coins.
 - **Tailwind CSS** pour la mise en forme rapide des composants.
 - **lucide-react** pour afficher des icônes vectorielles.
 
@@ -35,8 +35,8 @@ Composant central qui :
   `useState` et `useRef` ;
 - maintient l'historique pour `undo`/`redo` ;
 - contrôle l'affichage des calques (`fenetre`, `porte`, `facade`, etc.) ;
-- propose la découpe d'image (`CropModal`) et la définition d'une échelle
-  (`ScaleModal`).
+- propose la découpe d'image avec ajustement libre des coins
+  (`CropModal`) et la définition d'une échelle (`ScaleModal`).
 
 ### `CanvasWithGrid`
 Encapsule le `<canvas>` de Fabric dans un conteneur qui dessine une grille.
@@ -58,8 +58,9 @@ Deuxième panneau latéral pour choisir l'entité à annoter, démarrer ou arrê
 le dessin et exporter les annotations.
 
 ### `CropModal` et `ScaleModal`
-Fenêtres modales utilisées respectivement pour recadrer l'image importée et
-indiquer la longueur réelle d'un segment afin de calculer une échelle.
+Fenêtres modales utilisées respectivement pour recadrer l'image importée en
+ajustant librement les quatre coins du document, et pour indiquer la longueur
+réelle d'un segment afin de calculer une échelle.
 
 ## Logique algorithmique
 ### Grille de dessin
