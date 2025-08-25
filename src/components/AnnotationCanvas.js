@@ -28,8 +28,11 @@ const AnnotationCanvas = () => {
   const isDrawingMode = useRef(false);
   const isPolygonMode = useRef(false);
   const isScaleMode = useRef(false);
+  const isArcMode = useRef(false);
   const scaleLineRef = useRef(null);
+  const arcRef = useRef(null);
   const [scaleActive, setScaleActive] = useState(false);
+  const [arcActive, setArcActive] = useState(false);
   const [scaleRatio, setScaleRatio] = useState(null);
   const [scaleModalOpen, setScaleModalOpen] = useState(false);
   const [pendingScaleLength, setPendingScaleLength] = useState(null);
@@ -306,6 +309,32 @@ const AnnotationCanvas = () => {
         canvas.renderAll();
         return;
       }
+      if (isArcMode.current) {
+        activateEntityLayer('porte');
+        const color = entityColors['porte'];
+        startX.current = pointer.x;
+        startY.current = pointer.y;
+        drawing.current = true;
+        const arc = new Circle({
+          left: pointer.x,
+          top: pointer.y,
+          originX: 'center',
+          originY: 'center',
+          radius: 0,
+          startAngle: 0,
+          endAngle: Math.PI / 2,
+          stroke: color.stroke,
+          strokeWidth: color.strokeWidth,
+          fill: '',
+          selectable: true,
+          objectCaching: false,
+          dataType: 'porte',
+          visible: layerVisibilityRef.current['porte'],
+        });
+        arcRef.current = arc;
+        canvas.add(arc);
+        return;
+      }
 
       if (isDrawingMode.current) {
         activateEntityLayer(selectedEntityRef.current);
@@ -367,6 +396,13 @@ const AnnotationCanvas = () => {
         return;
       }
 
+      if (isArcMode.current && drawing.current && arcRef.current) {
+        const radius = Math.hypot(pointer.x - startX.current, pointer.y - startY.current);
+        arcRef.current.set({ radius });
+        canvas.renderAll();
+        return;
+      }
+
       if (drawing.current && rectRef.current) {
         const width = pointer.x - startX.current;
         const height = pointer.y - startY.current;
@@ -395,6 +431,15 @@ const AnnotationCanvas = () => {
         scaleLineRef.current = null;
         isScaleMode.current = false;
         setScaleActive(false);
+        drawing.current = false;
+        canvas.renderAll();
+        return;
+      }
+      if (isArcMode.current && arcRef.current) {
+        arcRef.current.setCoords();
+        annotationsHistory.current.push(arcRef.current);
+        redoStack.current = [];
+        arcRef.current = null;
         drawing.current = false;
         canvas.renderAll();
         return;
@@ -469,6 +514,10 @@ const AnnotationCanvas = () => {
       isScaleMode.current = false;
       setScaleActive(false);
     }
+    if (isDrawingMode.current && isArcMode.current) {
+      isArcMode.current = false;
+      setArcActive(false);
+    }
   };
 
   const togglePolygonDrawing = () => {
@@ -491,9 +540,28 @@ const AnnotationCanvas = () => {
       isDrawingMode.current = false;
       setDrawingActive(false);
     }
-     if (isPolygonMode.current && isScaleMode.current) {
+    if (isPolygonMode.current && isScaleMode.current) {
       isScaleMode.current = false;
       setScaleActive(false);
+    }
+    if (isPolygonMode.current && isArcMode.current) {
+      isArcMode.current = false;
+      setArcActive(false);
+    }
+  };
+  const toggleArcDrawing = () => {
+    isArcMode.current = !isArcMode.current;
+    setArcActive(isArcMode.current);
+
+    if (isArcMode.current) {
+      isDrawingMode.current = false;
+      isPolygonMode.current = false;
+      isScaleMode.current = false;
+      setDrawingActive(false);
+      setPolygonActive(false);
+      setScaleActive(false);
+      setSelectedEntity('porte');
+      selectedEntityRef.current = 'porte';
     }
   };
 const toggleScaleMode = () => {
@@ -506,6 +574,11 @@ const toggleScaleMode = () => {
       isPolygonMode.current = false;
       setDrawingActive(false);
       setPolygonActive(false);
+
+      if (isArcMode.current) {
+        isArcMode.current = false;
+        setArcActive(false);
+      }
 
       currentPolygonPoints.current = [];
       currentPolygonLines.current.forEach(line => canvas.remove(line));
@@ -771,9 +844,11 @@ ref.current = fabricImg;
           drawingActive={drawingActive}
           polygonActive={polygonActive}
           scaleActive={scaleActive}
+          arcActive={arcActive}
           toggleDrawing={toggleDrawing}
           togglePolygonDrawing={togglePolygonDrawing}
           toggleScaleMode={toggleScaleMode}
+          toggleArcDrawing={toggleArcDrawing}
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
           disabled={!toolsEnabled}

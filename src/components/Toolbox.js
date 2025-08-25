@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Ruler, Square, Shapes } from 'lucide-react';
+import { Ruler, Square, Shapes, Circle as CircleIcon } from 'lucide-react';
 
 const Toolbox = ({
   drawingActive,
   polygonActive,
   scaleActive,
+  arcActive,
   toggleDrawing,
   togglePolygonDrawing,
   toggleScaleMode,
+  toggleArcDrawing,
   selectedEntity,
   setSelectedEntity,
   disabled,
@@ -106,11 +108,11 @@ const Toolbox = ({
               <Shapes className="w-4 h-4" />
               <span>Polygon</span>
             </button>
-            {showPolygonDropdown && !polygonActive && !disabled && (
-              <div className="absolute top-0 left-full ml-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
-                <button
-                  className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => startPolygonWithType('fenetre')}
+          {showPolygonDropdown && !polygonActive && !disabled && (
+            <div className="absolute top-0 left-full ml-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-10">
+              <button
+                className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={() => startPolygonWithType('fenetre')}
                 >
                   🪟 Fenêtre
                 </button>
@@ -129,6 +131,20 @@ const Toolbox = ({
               </div>
             )}
           </div>
+          <button
+            onClick={toggleArcDrawing}
+            disabled={disabled}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+              disabled
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : arcActive
+                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+            }`}
+          >
+            <CircleIcon className="w-4 h-4" />
+            <span>Arc</span>
+          </button>
           <button
             onClick={toggleScaleMode}
             className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
