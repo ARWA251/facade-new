@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import Cropper from 'react-perspective-cropper';
+import Cropper from 'react-document-crop';
 
 const CropModal = ({
   cropMode,

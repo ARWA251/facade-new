@@ -6,7 +6,7 @@ simplifier le développement :
 
 - **React 19** pour construire l'interface utilisateur.
 - **Fabric.js** pour le dessin sur un `<canvas>` HTML.
-- **react-perspective-cropper** pour recadrer les images avec ajustement des quatre coins.
+- **react-document-crop** pour recadrer les images avec ajustement des quatre coins.
 - **Tailwind CSS** pour la mise en forme rapide des composants.
 - **lucide-react** pour afficher des icônes vectorielles.
 
