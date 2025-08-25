@@ -584,18 +584,16 @@ const toggleScaleMode = () => {
 
 
   const handleImageUpload = (e) => {
-    const canvas = fabricRef.current;
     const file = e.target.files[0];
 
     if (!file) return;
 
+    setSelectedImage(file);
+
     const reader = new FileReader();
     reader.onload = function (event) {
       const imageUrl = event.target.result;
-      setSelectedImage(imageUrl);
       addImageToCanvas(imageUrl, { layer: 'baseImage' });
-
-
       setCropMode('cropImage');
     };
     reader.readAsDataURL(file);
@@ -670,10 +668,6 @@ ref.current = fabricImg;
 
   // Ajoute l'image sélectionnée sans appliquer de crop
   const addImageDirectly = () => {
-    if (!selectedImage) return;
-
-    addImageToCanvas(selectedImage, { layer: 'baseImage' });
-
     setCropMode(null);
     setSelectedImage(null);
   };
