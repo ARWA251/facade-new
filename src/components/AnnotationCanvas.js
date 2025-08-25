@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas, Circle, Line, Rect, Polygon, Path, Image as FabricImage } from 'fabric';
+import { Canvas, Circle, Line, Rect, Polygon, Path, Image as FabricImage, util } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import LayerPanel from './LayerPanel';
@@ -404,7 +404,7 @@ const AnnotationCanvas = () => {
         const largeArcFlag = endAngle - startAngle <= Math.PI ? 0 : 1;
         const sweepFlag = endAngle >= startAngle ? 1 : 0;
         const d = `M ${startXPoint} ${startYPoint} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${endXPoint} ${endYPoint}`;
-        arcRef.current.set({ path: Path.parsePath(d) });
+        arcRef.current.set({ path: util.parsePath(d) });
         canvas.renderAll();
         return;
       }
