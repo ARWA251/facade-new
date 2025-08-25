@@ -565,7 +565,10 @@ const toggleScaleMode = () => {
           };
         }
       } else if (obj.type === 'polygon') {
-        const pixelPoints = obj.points.map(p => ({ x: p.x + obj.left, y: p.y + obj.top }));
+        const pixelPoints = obj.points.map(p => ({
+          x: obj.left + (p.x - obj.pathOffset.x) * obj.scaleX,
+          y: obj.top + (p.y - obj.pathOffset.y) * obj.scaleY,
+        }));
         polygon = pixelPoints.map(p => pixelToGeo(p.x, p.y, imgWidth, imgHeight));
         polygon.push(polygon[0]);
         if (scaleRatio) {
