@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Ruler, Square, Shapes } from 'lucide-react';
+import { Ruler, Square, Shapes, Circle } from 'lucide-react';
 
 const Toolbox = ({
   drawingActive,
   polygonActive,
+  arcActive,
   scaleActive,
   toggleDrawing,
   togglePolygonDrawing,
+  toggleArcDrawing,
   toggleScaleMode,
   selectedEntity,
   setSelectedEntity,
@@ -129,6 +131,20 @@ const Toolbox = ({
               </div>
             )}
           </div>
+          <button
+            onClick={toggleArcDrawing}
+            disabled={disabled}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+              disabled
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : arcActive
+                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+            }`}
+          >
+            <Circle className="w-4 h-4" />
+            <span>Arc</span>
+          </button>
           <button
             onClick={toggleScaleMode}
             className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${

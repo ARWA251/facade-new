@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas, Circle, Line, Rect, Polygon, Image as FabricImage } from 'fabric';
+import { Canvas, Circle, Line, Rect, Polygon, Path, Image as FabricImage, util } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import LayerPanel from './LayerPanel';
@@ -27,6 +27,7 @@ const AnnotationCanvas = () => {
 
   const isDrawingMode = useRef(false);
   const isPolygonMode = useRef(false);
+  const isArcMode = useRef(false);
   const isScaleMode = useRef(false);
   const scaleLineRef = useRef(null);
   const [scaleActive, setScaleActive] = useState(false);
@@ -39,12 +40,14 @@ const AnnotationCanvas = () => {
   const currentPolygonCircles = useRef([]);
   const previewLine = useRef(null);
   const rectRef = useRef(null);
+  const arcRef = useRef(null);
   const startX = useRef(0);
   const startY = useRef(0);
   const drawing = useRef(false);
 
   const [drawingActive, setDrawingActive] = useState(false);
   const [polygonActive, setPolygonActive] = useState(false);
+  const [arcActive, setArcActive] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState('fenetre');
   const [layerVisibility, setLayerVisibility] = useState({
     fenetre: true,
@@ -298,12 +301,33 @@ const AnnotationCanvas = () => {
           currentPolygonLines.current.push(line);
         }
 
-        if (previewLine.current) {
-          canvas.remove(previewLine.current);
-          previewLine.current = null;
-        }
+      if (previewLine.current) {
+        canvas.remove(previewLine.current);
+        previewLine.current = null;
+      }
 
-        canvas.renderAll();
+      canvas.renderAll();
+      return;
+    }
+
+      if (isArcMode.current) {
+        activateEntityLayer('porte');
+        const color = entityColors['porte'];
+        startX.current = pointer.x;
+        startY.current = pointer.y;
+        drawing.current = true;
+
+        const path = new Path(`M ${pointer.x} ${pointer.y}`, {
+          stroke: color.stroke,
+          strokeWidth: color.strokeWidth,
+          fill: '',
+          selectable: true,
+          objectCaching: false,
+          dataType: 'porte',
+          visible: layerVisibilityRef.current['porte'],
+        });
+        arcRef.current = path;
+        canvas.add(path);
         return;
       }
 
@@ -367,6 +391,24 @@ const AnnotationCanvas = () => {
         return;
       }
 
+      if (isArcMode.current && drawing.current && arcRef.current) {
+        const centerX = startX.current;
+        const centerY = startY.current;
+        const radius = Math.hypot(pointer.x - centerX, pointer.y - centerY);
+        const endAngle = Math.atan2(pointer.y - centerY, pointer.x - centerX);
+        const startAngle = 0;
+        const startXPoint = centerX + radius;
+        const startYPoint = centerY;
+        const endXPoint = centerX + radius * Math.cos(endAngle);
+        const endYPoint = centerY + radius * Math.sin(endAngle);
+        const largeArcFlag = endAngle - startAngle <= Math.PI ? 0 : 1;
+        const sweepFlag = endAngle >= startAngle ? 1 : 0;
+        const d = `M ${startXPoint} ${startYPoint} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${endXPoint} ${endYPoint}`;
+        arcRef.current.set({ path: util.parsePath(d) });
+        canvas.renderAll();
+        return;
+      }
+
       if (drawing.current && rectRef.current) {
         const width = pointer.x - startX.current;
         const height = pointer.y - startY.current;
@@ -395,6 +437,15 @@ const AnnotationCanvas = () => {
         scaleLineRef.current = null;
         isScaleMode.current = false;
         setScaleActive(false);
+        drawing.current = false;
+        canvas.renderAll();
+        return;
+      }
+      if (isArcMode.current && arcRef.current) {
+        arcRef.current.setCoords();
+        annotationsHistory.current.push(arcRef.current);
+        redoStack.current = [];
+        arcRef.current = null;
         drawing.current = false;
         canvas.renderAll();
         return;
@@ -469,6 +520,10 @@ const AnnotationCanvas = () => {
       isScaleMode.current = false;
       setScaleActive(false);
     }
+    if (isDrawingMode.current && isArcMode.current) {
+      isArcMode.current = false;
+      setArcActive(false);
+    }
   };
 
   const togglePolygonDrawing = () => {
@@ -491,9 +546,38 @@ const AnnotationCanvas = () => {
       isDrawingMode.current = false;
       setDrawingActive(false);
     }
-     if (isPolygonMode.current && isScaleMode.current) {
+    if (isPolygonMode.current && isScaleMode.current) {
       isScaleMode.current = false;
       setScaleActive(false);
+    }
+    if (isPolygonMode.current && isArcMode.current) {
+      isArcMode.current = false;
+      setArcActive(false);
+    }
+  };
+  const toggleArcDrawing = () => {
+    const canvas = fabricRef.current;
+    isArcMode.current = !isArcMode.current;
+    setArcActive(isArcMode.current);
+
+    if (isArcMode.current) {
+      isDrawingMode.current = false;
+      isPolygonMode.current = false;
+      isScaleMode.current = false;
+      setDrawingActive(false);
+      setPolygonActive(false);
+      setScaleActive(false);
+
+      currentPolygonPoints.current = [];
+      currentPolygonLines.current.forEach(line => canvas.remove(line));
+      currentPolygonLines.current = [];
+
+      if (previewLine.current) {
+        canvas.remove(previewLine.current);
+        previewLine.current = null;
+      }
+
+      canvas.renderAll();
     }
   };
 const toggleScaleMode = () => {
@@ -504,8 +588,10 @@ const toggleScaleMode = () => {
     if (isScaleMode.current) {
       isDrawingMode.current = false;
       isPolygonMode.current = false;
+      isArcMode.current = false;
       setDrawingActive(false);
       setPolygonActive(false);
+      setArcActive(false);
 
       currentPolygonPoints.current = [];
       currentPolygonLines.current.forEach(line => canvas.remove(line));
@@ -773,9 +859,11 @@ ref.current = fabricImg;
         <Toolbox
           drawingActive={drawingActive}
           polygonActive={polygonActive}
+          arcActive={arcActive}
           scaleActive={scaleActive}
           toggleDrawing={toggleDrawing}
           togglePolygonDrawing={togglePolygonDrawing}
+          toggleArcDrawing={toggleArcDrawing}
           toggleScaleMode={toggleScaleMode}
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
