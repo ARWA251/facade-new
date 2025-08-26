@@ -37,6 +37,7 @@ const AnnotationCanvas = () => {
   const measuring = useRef(false);
   const [measureActive, setMeasureActive] = useState(false);
   const [scaleRatio, setScaleRatio] = useState(null);
+  const scaleRatioRef = useRef(null);
   const [scaleModalOpen, setScaleModalOpen] = useState(false);
   const [pendingScaleLength, setPendingScaleLength] = useState(null);
   const [annotationPromptOpen, setAnnotationPromptOpen] = useState(false);
@@ -69,6 +70,10 @@ const AnnotationCanvas = () => {
   const layerVisibilityRef = useRef(layerVisibility);
   const baseImageRef = useRef(null);
   const processedImageRef = useRef(null);
+
+  useEffect(() => {
+    scaleRatioRef.current = scaleRatio;
+  }, [scaleRatio]);
 
   const toggleLayer = (layer) => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
@@ -270,8 +275,9 @@ const AnnotationCanvas = () => {
           }
           const lengthPx = Math.hypot(pointer.x - startX.current, pointer.y - startY.current);
           let label = '';
-          if (scaleRatio) {
-            label = `${(lengthPx * scaleRatio).toFixed(2)} cm`;
+          const ratio = scaleRatioRef.current;
+          if (ratio) {
+            label = `${(lengthPx * ratio).toFixed(2)} cm`;
           } else {
             label = 'Échelle non définie';
           }
@@ -298,8 +304,9 @@ const AnnotationCanvas = () => {
           if (target.type === 'rect') {
             const width = target.width * target.scaleX;
             const height = target.height * target.scaleY;
-            if (scaleRatio) {
-              msg = `L: ${(width * scaleRatio).toFixed(2)} cm  H: ${(height * scaleRatio).toFixed(2)} cm  S: ${(width * height * scaleRatio * scaleRatio).toFixed(2)} cm²`;
+            const ratio = scaleRatioRef.current;
+            if (ratio) {
+              msg = `L: ${(width * ratio).toFixed(2)} cm  H: ${(height * ratio).toFixed(2)} cm  S: ${(width * height * ratio * ratio).toFixed(2)} cm²`;
             } else {
               msg = 'Échelle non définie';
             }
@@ -310,8 +317,9 @@ const AnnotationCanvas = () => {
             }));
             const areaPx = polygonArea(pts);
             const perPx = polygonPerimeter(pts);
-            if (scaleRatio) {
-              msg = `P: ${(perPx * scaleRatio).toFixed(2)} cm  S: ${(areaPx * scaleRatio * scaleRatio).toFixed(2)} cm²`;
+            const ratio = scaleRatioRef.current;
+            if (ratio) {
+              msg = `P: ${(perPx * ratio).toFixed(2)} cm  S: ${(areaPx * ratio * ratio).toFixed(2)} cm²`;
             } else {
               msg = 'Échelle non définie';
             }
@@ -470,8 +478,9 @@ const AnnotationCanvas = () => {
         measureLineRef.current.set({ x2: pointer.x, y2: pointer.y });
         const lengthPx = Math.hypot(pointer.x - startX.current, pointer.y - startY.current);
         let label = '';
-        if (scaleRatio) {
-          label = `${(lengthPx * scaleRatio).toFixed(2)} cm`;
+        const ratio = scaleRatioRef.current;
+        if (ratio) {
+          label = `${(lengthPx * ratio).toFixed(2)} cm`;
         } else {
           label = 'Échelle non définie';
         }
