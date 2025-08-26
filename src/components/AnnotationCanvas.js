@@ -206,18 +206,22 @@ const AnnotationCanvas = () => {
     if (!canvas) return;
     const activeObjects = canvas.getActiveObjects();
     if (!activeObjects.length) return;
+    const propertiesToInclude = ['dataType'];
     activeObjects.forEach((obj) => {
       for (let i = 0; i < count; i++) {
         const offset = 10 * (i + 1);
-        obj.clone((cloned) => {
-          cloned.set({
-            left: obj.left + offset,
-            top: obj.top + offset,
-          });
-          canvas.add(cloned);
-          annotationsHistory.current.push(cloned);
-          canvas.renderAll();
-        });
+        obj.clone(
+          (cloned) => {
+            cloned.set({
+              left: obj.left + offset,
+              top: obj.top + offset,
+            });
+            canvas.add(cloned);
+            annotationsHistory.current.push(cloned);
+            canvas.renderAll();
+          },
+          propertiesToInclude
+        );
       }
     });
     canvas.discardActiveObject();
