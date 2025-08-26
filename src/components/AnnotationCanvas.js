@@ -269,9 +269,11 @@ const AnnotationCanvas = () => {
             measureLineRef.current.set({ x2: pointer.x, y2: pointer.y });
           }
           const lengthPx = Math.hypot(pointer.x - startX.current, pointer.y - startY.current);
-          let label = `${lengthPx.toFixed(2)} px`;
+          let label = '';
           if (scaleRatio) {
-            label += ` (${(lengthPx * scaleRatio).toFixed(2)} cm)`;
+            label = `${(lengthPx * scaleRatio).toFixed(2)} cm`;
+          } else {
+            label = 'Échelle non définie';
           }
           if (measureTextRef.current) {
             canvas.remove(measureTextRef.current);
@@ -296,9 +298,11 @@ const AnnotationCanvas = () => {
           if (target.type === 'rect') {
             const width = target.width * target.scaleX;
             const height = target.height * target.scaleY;
-            msg = scaleRatio
-              ? `L: ${(width * scaleRatio).toFixed(2)} cm  H: ${(height * scaleRatio).toFixed(2)} cm  S: ${(width * height * scaleRatio * scaleRatio).toFixed(2)} cm²`
-              : `L: ${width.toFixed(2)} px  H: ${height.toFixed(2)} px  S: ${(width * height).toFixed(2)} px²`;
+            if (scaleRatio) {
+              msg = `L: ${(width * scaleRatio).toFixed(2)} cm  H: ${(height * scaleRatio).toFixed(2)} cm  S: ${(width * height * scaleRatio * scaleRatio).toFixed(2)} cm²`;
+            } else {
+              msg = 'Échelle non définie';
+            }
           } else if (target.type === 'polygon') {
             const pts = target.points.map(p => ({
               x: target.left + (p.x - target.pathOffset.x) * target.scaleX,
@@ -306,9 +310,11 @@ const AnnotationCanvas = () => {
             }));
             const areaPx = polygonArea(pts);
             const perPx = polygonPerimeter(pts);
-            msg = scaleRatio
-              ? `P: ${(perPx * scaleRatio).toFixed(2)} cm  S: ${(areaPx * scaleRatio * scaleRatio).toFixed(2)} cm²`
-              : `P: ${perPx.toFixed(2)} px  S: ${areaPx.toFixed(2)} px²`;
+            if (scaleRatio) {
+              msg = `P: ${(perPx * scaleRatio).toFixed(2)} cm  S: ${(areaPx * scaleRatio * scaleRatio).toFixed(2)} cm²`;
+            } else {
+              msg = 'Échelle non définie';
+            }
           }
           if (msg) {
             if (measureTextRef.current) {
@@ -463,9 +469,11 @@ const AnnotationCanvas = () => {
       if (isMeasureMode.current && measuring.current && measureLineRef.current) {
         measureLineRef.current.set({ x2: pointer.x, y2: pointer.y });
         const lengthPx = Math.hypot(pointer.x - startX.current, pointer.y - startY.current);
-        let label = `${lengthPx.toFixed(2)} px`;
+        let label = '';
         if (scaleRatio) {
-          label += ` (${(lengthPx * scaleRatio).toFixed(2)} cm)`;
+          label = `${(lengthPx * scaleRatio).toFixed(2)} cm`;
+        } else {
+          label = 'Échelle non définie';
         }
         if (measureTextRef.current) {
           measureTextRef.current.set({ left: pointer.x + 10, top: pointer.y + 10, text: label });
