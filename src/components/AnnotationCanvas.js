@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas, Circle, Line, Rect, Polygon, Path, Image as FabricImage, util } from 'fabric';
+import { Canvas, Circle, Line, Rect, Polygon, Path, Image as FabricImage, util, Text } from 'fabric';
 import TopBar from './TopBar';
 import Toolbox from './Toolbox';
 import LayerPanel from './LayerPanel';
@@ -31,7 +31,13 @@ const AnnotationCanvas = () => {
   const isScaleMode = useRef(false);
   const scaleLineRef = useRef(null);
   const [scaleActive, setScaleActive] = useState(false);
+  const isMeasureMode = useRef(false);
+  const measureLineRef = useRef(null);
+  const measureTextRef = useRef(null);
+  const measuring = useRef(false);
+  const [measureActive, setMeasureActive] = useState(false);
   const [scaleRatio, setScaleRatio] = useState(null);
+  const scaleRatioRef = useRef(null);
   const [scaleModalOpen, setScaleModalOpen] = useState(false);
   const [pendingScaleLength, setPendingScaleLength] = useState(null);
   const [annotationPromptOpen, setAnnotationPromptOpen] = useState(false);
@@ -64,6 +70,10 @@ const AnnotationCanvas = () => {
   const layerVisibilityRef = useRef(layerVisibility);
   const baseImageRef = useRef(null);
   const processedImageRef = useRef(null);
+
+  useEffect(() => {
+    scaleRatioRef.current = scaleRatio;
+  }, [scaleRatio]);
 
   const toggleLayer = (layer) => {
     setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
@@ -257,6 +267,104 @@ const AnnotationCanvas = () => {
     
     canvas.on('mouse:down', function (opt) {
       const pointer = canvas.getPointer(opt.e);
+      if (isMeasureMode.current) {
+        if (measuring.current) {
+          measuring.current = false;
+          if (measureLineRef.current) {
+            measureLineRef.current.set({ x2: pointer.x, y2: pointer.y });
+          }
+          const lengthPx = Math.hypot(pointer.x - startX.current, pointer.y - startY.current);
+          let label = '';
+          const ratio = scaleRatioRef.current;
+          if (ratio) {
+            label = `${(lengthPx * ratio).toFixed(2)} cm`;
+          } else {
+            label = 'Échelle non définie';
+          }
+          if (measureTextRef.current) {
+            canvas.remove(measureTextRef.current);
+            measureTextRef.current = null;
+          }
+          const text = new Text(label, {
+            left: pointer.x + 10,
+            top: pointer.y + 10,
+            fontSize: 14,
+            fill: '#0000FF',
+            selectable: false,
+            evented: false,
+          });
+          measureTextRef.current = text;
+          canvas.add(text);
+          canvas.renderAll();
+          return;
+        }
+        const target = opt.target;
+        if (target && target !== canvas.backgroundImage) {
+          let msg = '';
+          if (target.type === 'rect') {
+            const width = target.width * target.scaleX;
+            const height = target.height * target.scaleY;
+            const ratio = scaleRatioRef.current;
+            if (ratio) {
+              msg = `L: ${(width * ratio).toFixed(2)} cm  H: ${(height * ratio).toFixed(2)} cm  S: ${(width * height * ratio * ratio).toFixed(2)} cm²`;
+            } else {
+              msg = 'Échelle non définie';
+            }
+          } else if (target.type === 'polygon') {
+            const pts = target.points.map(p => ({
+              x: target.left + (p.x - target.pathOffset.x) * target.scaleX,
+              y: target.top + (p.y - target.pathOffset.y) * target.scaleY,
+            }));
+            const areaPx = polygonArea(pts);
+            const perPx = polygonPerimeter(pts);
+            const ratio = scaleRatioRef.current;
+            if (ratio) {
+              msg = `P: ${(perPx * ratio).toFixed(2)} cm  S: ${(areaPx * ratio * ratio).toFixed(2)} cm²`;
+            } else {
+              msg = 'Échelle non définie';
+            }
+          }
+          if (msg) {
+            if (measureTextRef.current) {
+              canvas.remove(measureTextRef.current);
+              measureTextRef.current = null;
+            }
+            const text = new Text(msg, {
+              left: pointer.x + 10,
+              top: pointer.y + 10,
+              fontSize: 14,
+              fill: '#0000FF',
+              selectable: false,
+              evented: false,
+            });
+            measureTextRef.current = text;
+            canvas.add(text);
+            canvas.renderAll();
+            return;
+          }
+        }
+        startX.current = pointer.x;
+        startY.current = pointer.y;
+        measuring.current = true;
+        if (measureLineRef.current) {
+          canvas.remove(measureLineRef.current);
+          measureLineRef.current = null;
+        }
+        if (measureTextRef.current) {
+          canvas.remove(measureTextRef.current);
+          measureTextRef.current = null;
+        }
+        const line = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+          stroke: '#0000FF',
+          strokeWidth: 2,
+          selectable: false,
+          evented: false,
+        });
+        measureLineRef.current = line;
+        canvas.add(line);
+        canvas.renderAll();
+        return;
+      }
       if (isScaleMode.current) {
         startX.current = pointer.x;
         startY.current = pointer.y;
@@ -366,6 +474,33 @@ const AnnotationCanvas = () => {
 
     canvas.on('mouse:move', function (opt) {
       const pointer = canvas.getPointer(opt.e);
+      if (isMeasureMode.current && measuring.current && measureLineRef.current) {
+        measureLineRef.current.set({ x2: pointer.x, y2: pointer.y });
+        const lengthPx = Math.hypot(pointer.x - startX.current, pointer.y - startY.current);
+        let label = '';
+        const ratio = scaleRatioRef.current;
+        if (ratio) {
+          label = `${(lengthPx * ratio).toFixed(2)} cm`;
+        } else {
+          label = 'Échelle non définie';
+        }
+        if (measureTextRef.current) {
+          measureTextRef.current.set({ left: pointer.x + 10, top: pointer.y + 10, text: label });
+        } else {
+          const text = new Text(label, {
+            left: pointer.x + 10,
+            top: pointer.y + 10,
+            fontSize: 14,
+            fill: '#0000FF',
+            selectable: false,
+            evented: false,
+          });
+          measureTextRef.current = text;
+          canvas.add(text);
+        }
+        canvas.renderAll();
+        return;
+      }
       if (isScaleMode.current && drawing.current && scaleLineRef.current) {
         scaleLineRef.current.set({ x2: pointer.x, y2: pointer.y });
         canvas.renderAll();
@@ -524,6 +659,9 @@ const AnnotationCanvas = () => {
       isArcMode.current = false;
       setArcActive(false);
     }
+    if (isDrawingMode.current && isMeasureMode.current) {
+      toggleMeasureMode();
+    }
   };
 
   const togglePolygonDrawing = () => {
@@ -554,6 +692,9 @@ const AnnotationCanvas = () => {
       isArcMode.current = false;
       setArcActive(false);
     }
+    if (isPolygonMode.current && isMeasureMode.current) {
+      toggleMeasureMode();
+    }
   };
   const toggleArcDrawing = () => {
     const canvas = fabricRef.current;
@@ -579,8 +720,11 @@ const AnnotationCanvas = () => {
 
       canvas.renderAll();
     }
+    if (isArcMode.current && isMeasureMode.current) {
+      toggleMeasureMode();
+    }
   };
-const toggleScaleMode = () => {
+  const toggleScaleMode = () => {
     const canvas = fabricRef.current;
     isScaleMode.current = !isScaleMode.current;
     setScaleActive(isScaleMode.current);
@@ -602,6 +746,47 @@ const toggleScaleMode = () => {
         previewLine.current = null;
       }
 
+      canvas.renderAll();
+    }
+    if (isScaleMode.current && isMeasureMode.current) {
+      toggleMeasureMode();
+    }
+  };
+  const toggleMeasureMode = () => {
+    const canvas = fabricRef.current;
+    isMeasureMode.current = !isMeasureMode.current;
+    setMeasureActive(isMeasureMode.current);
+
+    if (isMeasureMode.current) {
+      isDrawingMode.current = false;
+      isPolygonMode.current = false;
+      isArcMode.current = false;
+      isScaleMode.current = false;
+      setDrawingActive(false);
+      setPolygonActive(false);
+      setArcActive(false);
+      setScaleActive(false);
+
+      currentPolygonPoints.current = [];
+      currentPolygonLines.current.forEach(line => canvas.remove(line));
+      currentPolygonLines.current = [];
+
+      if (previewLine.current) {
+        canvas.remove(previewLine.current);
+        previewLine.current = null;
+      }
+
+      canvas.renderAll();
+    } else {
+      measuring.current = false;
+      if (measureLineRef.current) {
+        canvas.remove(measureLineRef.current);
+        measureLineRef.current = null;
+      }
+      if (measureTextRef.current) {
+        canvas.remove(measureTextRef.current);
+        measureTextRef.current = null;
+      }
       canvas.renderAll();
     }
   };
@@ -861,10 +1046,12 @@ ref.current = fabricImg;
           polygonActive={polygonActive}
           arcActive={arcActive}
           scaleActive={scaleActive}
+          measureActive={measureActive}
           toggleDrawing={toggleDrawing}
           togglePolygonDrawing={togglePolygonDrawing}
           toggleArcDrawing={toggleArcDrawing}
           toggleScaleMode={toggleScaleMode}
+          toggleMeasureMode={toggleMeasureMode}
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
           disabled={!toolsEnabled}
