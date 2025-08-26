@@ -200,6 +200,29 @@ const AnnotationCanvas = () => {
     canvas.discardActiveObject();
     canvas.requestRenderAll();
   };
+
+  const duplicateSelected = (count) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const activeObjects = canvas.getActiveObjects();
+    if (!activeObjects.length) return;
+    activeObjects.forEach((obj) => {
+      for (let i = 0; i < count; i++) {
+        const offset = 10 * (i + 1);
+        obj.clone((cloned) => {
+          cloned.set({
+            left: obj.left + offset,
+            top: obj.top + offset,
+          });
+          canvas.add(cloned);
+          annotationsHistory.current.push(cloned);
+          canvas.renderAll();
+        });
+      }
+    });
+    canvas.discardActiveObject();
+    redoStack.current = [];
+  };
  // Allow keyboard shortcuts (Ctrl/Cmd + Z or Y) to trigger undo/redo
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -868,6 +891,7 @@ ref.current = fabricImg;
           selectedEntity={selectedEntity}
           setSelectedEntity={setSelectedEntity}
           disabled={!toolsEnabled}
+          duplicateSelected={duplicateSelected}
         />
         <div className="flex-1 p-2 md:p-6 flex items-center justify-center relative">
           <CanvasWithGrid ref={canvasRef} />

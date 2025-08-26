@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ruler, Square, Shapes, Circle } from 'lucide-react';
+import { Ruler, Square, Shapes, Circle, CopyPlus } from 'lucide-react';
 
 const Toolbox = ({
   drawingActive,
@@ -13,9 +13,11 @@ const Toolbox = ({
   selectedEntity,
   setSelectedEntity,
   disabled,
+  duplicateSelected,
 }) => {
   const [showPolygonDropdown, setShowPolygonDropdown] = useState(false);
   const [showRectangleDropdown, setShowRectangleDropdown] = useState(false);
+  const [duplicationCount, setDuplicationCount] = useState(1);
 
   const handlePolygonClick = () => {
     if (disabled) return;
@@ -48,6 +50,12 @@ const Toolbox = ({
     if (!drawingActive) {
       toggleDrawing();
     }
+  };
+
+  const handleDuplicate = () => {
+    if (disabled) return;
+    const count = Math.max(1, parseInt(duplicationCount, 10) || 1);
+    duplicateSelected(count);
   };
 
   return (
@@ -156,6 +164,28 @@ const Toolbox = ({
             <Ruler className="w-4 h-4" />
             <span>Échelle</span>
           </button>
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="number"
+              min="1"
+              value={duplicationCount}
+              onChange={(e) => setDuplicationCount(e.target.value)}
+              className="w-16 px-2 py-1 border rounded-md text-sm"
+              disabled={disabled}
+            />
+            <button
+              onClick={handleDuplicate}
+              disabled={disabled}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+                disabled
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+              }`}
+            >
+              <CopyPlus className="w-4 h-4" />
+              <span>Dupliquer</span>
+            </button>
+          </div>
         </div>
       </div>
     </aside>
