@@ -6,10 +6,12 @@ const Toolbox = ({
   polygonActive,
   arcActive,
   scaleActive,
+  measureActive,
   toggleDrawing,
   togglePolygonDrawing,
   toggleArcDrawing,
   toggleScaleMode,
+  toggleMeasureMode,
   selectedEntity,
   setSelectedEntity,
   disabled,
@@ -144,6 +146,20 @@ const Toolbox = ({
           >
             <Circle className="w-4 h-4" />
             <span>Arc</span>
+          </button>
+          <button
+            onClick={toggleMeasureMode}
+            disabled={disabled}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-out transform ${
+              disabled
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : measureActive
+                  ? 'bg-blue-500 text-white shadow-lg scale-105 hover:bg-blue-600'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
+            }`}
+          >
+            <Ruler className="w-4 h-4" />
+            <span>Mesurer</span>
           </button>
           <button
             onClick={toggleScaleMode}
